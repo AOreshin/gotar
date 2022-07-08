@@ -1,0 +1,64 @@
+package main
+
+import "math/rand"
+
+const (
+	SAMPLING_RATE = 44100
+	DECAY_FACTOR  = 0.994 * 0.5
+)
+
+type GuitarString struct {
+	ringBuffer *RingBuffer
+	tics       int
+}
+
+func (g *GuitarString) Pluck() {
+	for i := 0; i < g.ringBuffer.capacity; i++ {
+		g.ringBuffer.Dequeue()
+		v := rand.Float64() - 0.5
+		err := g.ringBuffer.Enqueue(v)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func (g *GuitarString) Tic() {
+	g.tics++
+	first, err := g.ringBuffer.Dequeue()
+	if err != nil {
+		panic(err)
+	}
+	second, err := g.ringBuffer.Peek()
+	if err != nil {
+		panic(err)
+	}
+	v := DECAY_FACTOR * (first + second)
+	g.ringBuffer.Enqueue(v)
+}
+
+func (g *GuitarString) Sample() float64 {
+	v, err := g.ringBuffer.Peek()
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+func (g *GuitarString) Time() int {
+	return g.tics
+}
+
+func NewGuitarString(frequency float64) *GuitarString {
+	capacity := int(SAMPLING_RATE / frequency)
+	r := NewRingBuffer(capacity)
+	for i := 0; i < capacity; i++ {
+		err := r.Enqueue(0)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return &GuitarString{
+		ringBuffer: r,
+	}
+}
