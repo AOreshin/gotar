@@ -12,17 +12,6 @@ type GuitarString struct {
 	tics       int
 }
 
-func (g *GuitarString) Pluck() {
-	for i := 0; i < g.ringBuffer.capacity; i++ {
-		g.ringBuffer.Dequeue()
-		v := rand.Float64() - 0.5
-		err := g.ringBuffer.Enqueue(v)
-		if err != nil {
-			panic(err)
-		}
-	}
-}
-
 func (g *GuitarString) Tic() {
 	g.tics++
 	first, err := g.ringBuffer.Dequeue()
@@ -53,7 +42,8 @@ func NewGuitarString(frequency float64) *GuitarString {
 	capacity := int(SAMPLING_RATE / frequency)
 	r := NewRingBuffer(capacity)
 	for i := 0; i < capacity; i++ {
-		err := r.Enqueue(0)
+		v := rand.Float64() - 0.5
+		err := r.Enqueue(v)
 		if err != nil {
 			panic(err)
 		}

@@ -3,13 +3,13 @@ module guitarHero
 go 1.18
 
 require (
-	github.com/faiface/beep v1.1.0
+	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
+	github.com/faiface/beep v1.0.0
 	github.com/stretchr/testify v1.8.0
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
 	github.com/hajimehoshi/oto v0.7.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

@@ -66,7 +66,6 @@ func main() {
 		frequency, ok := notes[char]
 		if ok {
 			str := NewGuitarString(frequency)
-			str.Pluck()
 			speaker.Play(stringStreamer(str))
 		}
 		if key == keyboard.KeyEsc {
@@ -79,6 +78,7 @@ func stringStreamer(str *GuitarString) beep.Streamer {
 	return beep.StreamerFunc(func(samples [][2]float64) (n int, ok bool) {
 		for i := 0; i < len(samples); i++ {
 			s := str.Sample()
+			s = softDistortion(s)
 			samples[i][0] = s
 			samples[i][1] = s
 			str.Tic()
@@ -88,4 +88,24 @@ func stringStreamer(str *GuitarString) beep.Streamer {
 		}
 		return len(samples), true
 	})
+}
+
+func heavyDistortion(s float64) float64 {
+	if s > 0.01 {
+		s = 0.2
+	}
+	if s < -0.01 {
+		s = -0.2
+	}
+	return s
+}
+
+func softDistortion(s float64) float64 {
+	if s > 0.01 {
+		s = 0.1
+	}
+	if s < -0.01 {
+		s = -0.1
+	}
+	return s
 }
