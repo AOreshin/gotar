@@ -1,13 +1,15 @@
 package main
 
 import (
-	"github.com/eiannone/keyboard"
+	"math"
+	"time"
+
 	"github.com/faiface/beep"
-	"github.com/faiface/beep/speaker"
+	"github.com/yanel/go-rtaudio/src/contrib/go/rtaudio"
 )
 
 const (
-	AUDIO_BUFFER = 2048
+	AUDIO_BUFFER = 128
 	MAX_TIME     = 600000
 )
 
@@ -51,27 +53,62 @@ var notes = map[rune]float64{
 }
 
 func main() {
-	speaker.Init(SAMPLING_RATE, AUDIO_BUFFER)
-	if err := keyboard.Open(); err != nil {
+	audio, err := rtaudio.Create(rtaudio.API(rtaudio.APIWindowsASIO))
+	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		_ = keyboard.Close()
-	}()
-	for {
-		char, key, err := keyboard.GetKey()
-		if err != nil {
-			panic(err)
-		}
-		frequency, ok := notes[char]
-		if ok {
-			str := NewGuitarString(frequency)
-			speaker.Play(stringStreamer(str))
-		}
-		if key == keyboard.KeyEsc {
-			break
-		}
+	defer audio.Destroy()
+	params := rtaudio.StreamParams{
+		DeviceID:     uint(audio.DefaultOutputDevice()),
+		NumChannels:  2,
+		FirstChannel: 0,
 	}
+	options := rtaudio.StreamOptions{
+		Flags: rtaudio.FlagsMinimizeLatency,
+	}
+	phase := 0.0
+	const (
+		sampleRate = 48000
+		bufSz      = 512
+		freq       = 440.0
+	)
+	cb := func(out, in rtaudio.Buffer, dur time.Duration, status rtaudio.StreamStatus) int {
+		samples := out.Float64()
+		for i := 0; i < len(samples)/2; i++ {
+			sample := float64(math.Sin(2 * math.Pi * phase))
+			phase += freq / sampleRate
+
+			samples[i*2] = sample
+			samples[i*2+1] = sample
+		}
+		return 0
+	}
+	err = audio.Open(&params, nil, rtaudio.FormatFloat64, SAMPLING_RATE, AUDIO_BUFFER, cb, &options)
+	if err != nil {
+		panic(err)
+	}
+	defer audio.Close()
+	audio.Start()
+	defer audio.Stop()
+	// if err := keyboard.Open(); err != nil {
+	// 	panic(err)
+	// }
+	// defer func() {
+	// 	_ = keyboard.Close()
+	// }()
+	// for {
+	// 	char, key, err := keyboard.GetKey()
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	frequency, ok := notes[char]
+	// 	if ok {
+	// 		str := NewGuitarString(frequency)
+	// 	}
+	// 	if key == keyboard.KeyEsc {
+	// 		break
+	// 	}
+	// }
 }
 
 func stringStreamer(str *GuitarString) beep.Streamer {
