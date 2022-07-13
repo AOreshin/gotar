@@ -26,7 +26,7 @@ func (g *GuitarString) Tic() {
 	g.ringBuffer.Enqueue(v)
 }
 
-func (g *GuitarString) Sample() float64 {
+func (g *GuitarString) Sample() float32 {
 	v, err := g.ringBuffer.Peek()
 	if err != nil {
 		panic(err)
@@ -38,11 +38,11 @@ func (g *GuitarString) Time() int {
 	return g.tics
 }
 
-func NewGuitarString(frequency float64) *GuitarString {
+func NewGuitarString(frequency float32) *GuitarString {
 	capacity := int(SAMPLING_RATE / frequency)
 	r := NewRingBuffer(capacity)
 	for i := 0; i < capacity; i++ {
-		v := rand.Float64() - 0.5
+		v := rand.Float32() - 0.5
 		err := r.Enqueue(v)
 		if err != nil {
 			panic(err)

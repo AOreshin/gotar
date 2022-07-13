@@ -9,11 +9,9 @@ import (
 )
 
 const (
-	AUDIO_BUFFER = 16
-	MAX_TIME     = 600000
+	AUDIO_BUFFER          = 16
+	DEFAULT_DURATION_TICS = 600000
 )
-
-var ()
 
 func main() {
 	audio, err := rtaudio.Create(rtaudio.APIUnspecified)
@@ -33,13 +31,14 @@ func main() {
 	options := rtaudio.StreamOptions{
 		Flags: rtaudio.FlagsMinimizeLatency,
 	}
+
+	duration := DEFAULT_DURATION_TICS
 	strings := []*GuitarString{}
+
 	cb := func(out, in rtaudio.Buffer, dur time.Duration, status rtaudio.StreamStatus) int {
 		samples := out.Float32()
 		for i := 0; i < len(samples)/2; i++ {
-			s := stringSamples(strings)
-			samples[i*2] = s
-			samples[i*2+1] = s
+			samples[i*2], samples[i*2+1] = stringSamples(strings, duration)
 		}
 		return 0
 	}
@@ -64,22 +63,38 @@ func main() {
 			panic(err)
 		}
 		frequency, ok := notes[char]
-		if ok {
-			strings = removeDeadStrings(strings)
-			strings = append(strings, NewGuitarString(frequency))
-			s := fmt.Sprintf("%d polyphonic strings", len(strings))
-			fmt.Printf("\r%s", s)
+		switch key {
+		case keyboard.KeyPgdn:
+			if duration > 1 {
+				duration /= 2
+			}
+		case keyboard.KeyPgup:
+			duration *= 2
+		case keyboard.KeyArrowUp:
+			for k := range notes {
+				notes[k] *= 2
+			}
+		case keyboard.KeyArrowDown:
+			for k := range notes {
+				notes[k] /= 2
+			}
+		case keyboard.KeyEsc:
+			return
+		default:
+			if ok {
+				strings = removeDeadStrings(strings, duration)
+				strings = append(strings, NewGuitarString(frequency))
+			}
 		}
-		if key == keyboard.KeyEsc {
-			break
-		}
+		s := fmt.Sprintf("note %s, frequency %.3f, duration = %d tics, %d ringing strings", keysToNotes[char], frequency, duration, len(strings))
+		fmt.Printf("\r%s", s)
 	}
 }
 
-func removeDeadStrings(strings []*GuitarString) []*GuitarString {
+func removeDeadStrings(strings []*GuitarString, duration int) []*GuitarString {
 	ringingStrings := []*GuitarString{}
 	for _, s := range strings {
-		if s.Time() > MAX_TIME {
+		if s.Time() > duration {
 			continue
 		}
 		ringingStrings = append(ringingStrings, s)
@@ -87,15 +102,16 @@ func removeDeadStrings(strings []*GuitarString) []*GuitarString {
 	return ringingStrings
 }
 
-func stringSamples(strings []*GuitarString) float32 {
-	sample := 0.
-	for _, str := range strings {
-		s := str.Sample()
-		s = softDistortion(s)
-		sample += s
-		str.Tic()
+func stringSamples(strings []*GuitarString, duration int) (float32, float32) {
+	var sample float32
+	for _, s := range strings {
+		if s.Time() > duration {
+			continue
+		}
+		sample += s.Sample()
+		s.Tic()
 	}
-	return float32(sample)
+	return sample, sample
 }
 
 func printAvailableApis() {

@@ -9,7 +9,7 @@ var (
 
 type RingBuffer struct {
 	first, last, capacity, size int
-	buffer                      []float64
+	buffer                      []float32
 }
 
 func (r *RingBuffer) Size() int {
@@ -24,7 +24,7 @@ func (r *RingBuffer) IsFull() bool {
 	return r.size == r.capacity
 }
 
-func (r *RingBuffer) Enqueue(f float64) error {
+func (r *RingBuffer) Enqueue(f float32) error {
 	if r.IsFull() {
 		return ErrFullQueue
 	}
@@ -37,7 +37,7 @@ func (r *RingBuffer) Enqueue(f float64) error {
 	return nil
 }
 
-func (r *RingBuffer) Dequeue() (float64, error) {
+func (r *RingBuffer) Dequeue() (float32, error) {
 	if r.IsEmpty() {
 		return 0, ErrEmptyQueue
 	}
@@ -50,7 +50,7 @@ func (r *RingBuffer) Dequeue() (float64, error) {
 	return f, nil
 }
 
-func (r *RingBuffer) Peek() (float64, error) {
+func (r *RingBuffer) Peek() (float32, error) {
 	if r.IsEmpty() {
 		return 0, ErrEmptyQueue
 	}
@@ -60,6 +60,6 @@ func (r *RingBuffer) Peek() (float64, error) {
 func NewRingBuffer(capacity int) *RingBuffer {
 	return &RingBuffer{
 		capacity: capacity,
-		buffer:   make([]float64, capacity),
+		buffer:   make([]float32, capacity),
 	}
 }

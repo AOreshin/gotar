@@ -15,7 +15,7 @@ func TestRingBufferZeroCapacity(t *testing.T) {
 
 func TestRingBuffer(t *testing.T) {
 	r := NewRingBuffer(1)
-	f := 0.1
+	f := float32(0.1)
 
 	err := r.Enqueue(f)
 	assert.NoError(t, err)
