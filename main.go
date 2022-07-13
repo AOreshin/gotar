@@ -60,7 +60,7 @@ func main() {
 	defer audio.Destroy()
 	params := rtaudio.StreamParams{
 		DeviceID:     uint(audio.DefaultOutputDevice()),
-		NumChannels:  2,
+		NumChannels:  6,
 		FirstChannel: 0,
 	}
 	options := rtaudio.StreamOptions{
@@ -88,7 +88,10 @@ func main() {
 		panic(err)
 	}
 	defer audio.Close()
-	audio.Start()
+	err = audio.Start()
+	if err != nil {
+		panic(err)
+	}
 	defer audio.Stop()
 	// if err := keyboard.Open(); err != nil {
 	// 	panic(err)
