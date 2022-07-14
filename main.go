@@ -57,6 +57,7 @@ func main() {
 	}()
 
 	decayFactor := DECAY_FACTOR
+	overlap := true
 
 	for {
 		char, key, err := keyboard.GetKey()
@@ -65,6 +66,8 @@ func main() {
 		}
 		frequency, ok := notes[char]
 		switch key {
+		case keyboard.KeySpace:
+			overlap = !overlap
 		case keyboard.KeyPgdn:
 			decayFactor -= 0.001
 		case keyboard.KeyPgup:
@@ -82,10 +85,15 @@ func main() {
 		default:
 			if ok {
 				strings = removeDeadStrings(strings, DEFAULT_DURATION_TICS)
-				strings = append(strings, NewGuitarString(frequency, decayFactor))
+				if overlap {
+					strings = append(strings, NewGuitarString(frequency, decayFactor))
+				} else {
+					strings = []*GuitarString{NewGuitarString(frequency, decayFactor)}
+				}
 			}
 		}
-		s := fmt.Sprintf("note %s, frequency %.3f, decay factor = %.3f tics, %d ringing strings", keysToNotes[char], frequency, decayFactor, len(strings))
+		s := fmt.Sprintf("note %s, frequency %.3f, decay factor %.3f, overlap %v, %d ringing strings",
+			keysToNotes[char], frequency, decayFactor, overlap, len(strings))
 		fmt.Printf("\r%s", s)
 	}
 }
