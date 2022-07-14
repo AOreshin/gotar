@@ -4,12 +4,13 @@ import "math/rand"
 
 const (
 	SAMPLING_RATE = 44100
-	DECAY_FACTOR  = 0.994 * 0.5
+	DECAY_FACTOR  = float32(0.994 * 0.5)
 )
 
 type GuitarString struct {
-	ringBuffer *RingBuffer
-	tics       int
+	decayFactor float32
+	ringBuffer  *RingBuffer
+	tics        int
 }
 
 func (g *GuitarString) Tic() {
@@ -22,7 +23,7 @@ func (g *GuitarString) Tic() {
 	if err != nil {
 		panic(err)
 	}
-	v := DECAY_FACTOR * (first + second)
+	v := g.decayFactor * (first + second)
 	g.ringBuffer.Enqueue(v)
 }
 
@@ -38,7 +39,7 @@ func (g *GuitarString) Time() int {
 	return g.tics
 }
 
-func NewGuitarString(frequency float32) *GuitarString {
+func NewGuitarString(frequency, decayFactor float32) *GuitarString {
 	capacity := int(SAMPLING_RATE / frequency)
 	r := NewRingBuffer(capacity)
 	for i := 0; i < capacity; i++ {
@@ -49,6 +50,7 @@ func NewGuitarString(frequency float32) *GuitarString {
 		}
 	}
 	return &GuitarString{
-		ringBuffer: r,
+		ringBuffer:  r,
+		decayFactor: decayFactor,
 	}
 }

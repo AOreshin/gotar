@@ -32,13 +32,12 @@ func main() {
 		Flags: rtaudio.FlagsMinimizeLatency,
 	}
 
-	duration := DEFAULT_DURATION_TICS
 	strings := []*GuitarString{}
 
 	cb := func(out, in rtaudio.Buffer, dur time.Duration, status rtaudio.StreamStatus) int {
 		samples := out.Float32()
 		for i := 0; i < len(samples)/2; i++ {
-			samples[i*2], samples[i*2+1] = stringSamples(strings, duration)
+			samples[i*2], samples[i*2+1] = stringSamples(strings)
 		}
 		return 0
 	}
@@ -57,6 +56,8 @@ func main() {
 		_ = keyboard.Close()
 	}()
 
+	decayFactor := DECAY_FACTOR
+
 	for {
 		char, key, err := keyboard.GetKey()
 		if err != nil {
@@ -65,11 +66,9 @@ func main() {
 		frequency, ok := notes[char]
 		switch key {
 		case keyboard.KeyPgdn:
-			if duration > 1 {
-				duration /= 2
-			}
+			decayFactor -= 0.001
 		case keyboard.KeyPgup:
-			duration *= 2
+			decayFactor += 0.001
 		case keyboard.KeyArrowUp:
 			for k := range notes {
 				notes[k] *= 2
@@ -82,11 +81,11 @@ func main() {
 			return
 		default:
 			if ok {
-				strings = removeDeadStrings(strings, duration)
-				strings = append(strings, NewGuitarString(frequency))
+				strings = removeDeadStrings(strings, DEFAULT_DURATION_TICS)
+				strings = append(strings, NewGuitarString(frequency, decayFactor))
 			}
 		}
-		s := fmt.Sprintf("note %s, frequency %.3f, duration = %d tics, %d ringing strings", keysToNotes[char], frequency, duration, len(strings))
+		s := fmt.Sprintf("note %s, frequency %.3f, decay factor = %.3f tics, %d ringing strings", keysToNotes[char], frequency, decayFactor, len(strings))
 		fmt.Printf("\r%s", s)
 	}
 }
@@ -102,14 +101,17 @@ func removeDeadStrings(strings []*GuitarString, duration int) []*GuitarString {
 	return ringingStrings
 }
 
-func stringSamples(strings []*GuitarString, duration int) (float32, float32) {
+func stringSamples(strings []*GuitarString) (float32, float32) {
 	var sample float32
 	for _, s := range strings {
-		if s.Time() > duration {
-			continue
-		}
 		sample += s.Sample()
 		s.Tic()
+	}
+	if sample > 1 {
+		sample = 1
+	}
+	if sample < -1 {
+		sample = -1
 	}
 	return sample, sample
 }
