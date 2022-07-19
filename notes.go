@@ -1,5 +1,11 @@
 package main
 
+type note struct {
+	frequency float32
+	name      string
+	octave    int
+}
+
 var notes = map[rune]float32{
 	'q': 110,
 	'2': 116.54,
