@@ -103,6 +103,8 @@ func main() {
 			for k := range notes {
 				notes[k] /= 2
 			}
+		case keyboard.KeyEnter:
+			strings = []*GuitarString{}
 		case keyboard.KeyEsc:
 			return
 		default:
