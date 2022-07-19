@@ -111,8 +111,8 @@ func main() {
 				}
 			}
 		}
-		s := fmt.Sprintf("note %s, frequency %.3f, decay factor %.3f, overlap %v, %d ringing strings",
-			keysToNotes[char], frequency, decay, overlap, len(strings))
+		s := fmt.Sprintf("note %s, frequency %.3f, decay factor %.3f, overlap %v, %d ringing strings, char %c",
+			keysToNotes[char], frequency, decay, overlap, len(strings), char)
 		fmt.Printf("\r%s", s)
 	}
 }
