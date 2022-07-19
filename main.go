@@ -81,7 +81,11 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		frequency, ok := notes[char]
+		note, ok := keysToNotes[char]
+		frequency, name, octave := float32(0.0), "", 0
+		if note != nil {
+			frequency, name, octave = note.frequency, note.name, note.octave
+		}
 		switch key {
 		case keyboard.KeySpace:
 			overlap = !overlap
@@ -90,12 +94,16 @@ func main() {
 		case keyboard.KeyPgup:
 			decay += 0.001
 		case keyboard.KeyArrowUp:
-			for k := range notes {
-				notes[k] *= 2
+			for k := range keysToNotes {
+				note := keysToNotes[k]
+				note.frequency *= 2
+				note.octave++
 			}
 		case keyboard.KeyArrowDown:
-			for k := range notes {
-				notes[k] /= 2
+			for k := range keysToNotes {
+				note := keysToNotes[k]
+				note.frequency /= 2
+				note.octave--
 			}
 		case keyboard.KeyEnter:
 			strings = []*GuitarString{}
@@ -111,8 +119,8 @@ func main() {
 				}
 			}
 		}
-		s := fmt.Sprintf("note %s, frequency %.3f, decay factor %.3f, overlap %v, %d ringing strings, char %c",
-			keysToNotes[char], frequency, decay, overlap, len(strings), char)
+		s := fmt.Sprintf("note %s%d, frequency %.3f, decay factor %.3f, overlap %v, %d ringing strings, char %c",
+			name, octave, frequency, decay, overlap, len(strings), char)
 		fmt.Printf("\r%s", s)
 	}
 }
