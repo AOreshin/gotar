@@ -42,11 +42,12 @@ func main() {
 	printAvailableDevices(audio)
 
 	strings := []*GuitarString{}
+	fxs := []fx{}
 
 	cb := func(out, in rtaudio.Buffer, dur time.Duration, status rtaudio.StreamStatus) int {
 		samples := out.Float32()
 		for i := 0; i < len(samples)/2; i++ {
-			l, r := stringSamples(strings)
+			l, r := stringSamples(strings, fxs)
 			samples[i*2], samples[i*2+1] = l, r
 
 			s := toWavSample(l, r)
@@ -75,6 +76,9 @@ func main() {
 
 	decay := decayFactor
 	overlap := true
+	outOfPhase := false
+	softDistortion := false
+	heavyDistortion := false
 
 	for {
 		char, key, err := keyboard.GetKey()
@@ -87,6 +91,12 @@ func main() {
 			frequency, name, octave = note.frequency, note.name, note.octave
 		}
 		switch key {
+		case keyboard.KeyArrowLeft:
+			outOfPhase, fxs = switchFx(outOfPhase, outOfPhaseFx, fxs)
+		case keyboard.KeyArrowRight:
+			softDistortion, fxs = switchFx(softDistortion, softDistortionFx, fxs)
+		case keyboard.KeyHome:
+			heavyDistortion, fxs = switchFx(heavyDistortion, heavyDistortionFx, fxs)
 		case keyboard.KeySpace:
 			overlap = !overlap
 		case keyboard.KeyPgdn:
@@ -119,8 +129,8 @@ func main() {
 				}
 			}
 		}
-		s := fmt.Sprintf("note %s%d, frequency %.3f, decay factor %.3f, overlap %v, %d ringing strings, char %c",
-			name, octave, frequency, decay, overlap, len(strings), char)
+		s := fmt.Sprintf("note %s%d, frequency %.3f, decay factor %.3f, overlap %v, fx %v, %d ringing strings, char %c",
+			name, octave, frequency, decay, overlap, fxs, len(strings), char)
 		fmt.Printf("\r%s", s)
 	}
 }
@@ -136,7 +146,7 @@ func removeDeadStrings(strings []*GuitarString, duration int) []*GuitarString {
 	return ringingStrings
 }
 
-func stringSamples(strings []*GuitarString) (float32, float32) {
+func stringSamples(strings []*GuitarString, fxs []fx) (float32, float32) {
 	var sample float32
 	for _, s := range strings {
 		sample += s.Sample()
@@ -148,7 +158,11 @@ func stringSamples(strings []*GuitarString) (float32, float32) {
 	if sample < -1 {
 		sample = -1
 	}
-	return sample, sample
+	l, r := sample, sample
+	for _, f := range fxs {
+		l, r = f.apply(l, r)
+	}
+	return l, r
 }
 
 func printAvailableApis() {
@@ -186,4 +200,23 @@ func rtAudioOptions() *rtaudio.StreamOptions {
 	return &rtaudio.StreamOptions{
 		Flags: rtaudio.FlagsMinimizeLatency,
 	}
+}
+
+func removeFx(fxs []fx, f fx) []fx {
+	for i, v := range fxs {
+		if f.name == v.name {
+			return append(fxs[:i], fxs[i+1:]...)
+		}
+	}
+	return fxs
+}
+
+func switchFx(flag bool, f fx, fxs []fx) (bool, []fx) {
+	flag = !flag
+	if flag {
+		fxs = append(fxs, f)
+	} else {
+		fxs = removeFx(fxs, f)
+	}
+	return flag, fxs
 }
