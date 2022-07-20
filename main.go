@@ -41,7 +41,7 @@ func main() {
 	printAvailableApis()
 	printAvailableDevices(audio)
 
-	strings := []*GuitarString{}
+	strings := []VibratingString{}
 	fxs := []fx{}
 
 	cb := func(out, in rtaudio.Buffer, dur time.Duration, status rtaudio.StreamStatus) int {
@@ -78,7 +78,9 @@ func main() {
 	overlap := true
 	outOfPhase := false
 	softDistortion := false
-	heavyDistortion := false
+	stringTypes := []VibratingString{&GuitarString{}, &SynthString{}}
+	currentStringType := VibratingString(&GuitarString{})
+	currentStringIndex := 0
 
 	for {
 		char, key, err := keyboard.GetKey()
@@ -92,11 +94,21 @@ func main() {
 		}
 		switch key {
 		case keyboard.KeyArrowLeft:
-			outOfPhase, fxs = switchFx(outOfPhase, outOfPhaseFx, fxs)
+			currentStringIndex--
+			if currentStringIndex < 0 {
+				currentStringIndex = len(stringTypes) - 1
+			}
+			currentStringType = stringTypes[currentStringIndex]
 		case keyboard.KeyArrowRight:
-			softDistortion, fxs = switchFx(softDistortion, softDistortionFx, fxs)
+			currentStringIndex++
+			if currentStringIndex == len(stringTypes) {
+				currentStringIndex = 0
+			}
+			currentStringType = stringTypes[currentStringIndex]
 		case keyboard.KeyHome:
-			heavyDistortion, fxs = switchFx(heavyDistortion, heavyDistortionFx, fxs)
+			outOfPhase, fxs = switchFx(outOfPhase, outOfPhaseFx, fxs)
+		case keyboard.KeyEnd:
+			softDistortion, fxs = switchFx(softDistortion, softDistortionFx, fxs)
 		case keyboard.KeySpace:
 			overlap = !overlap
 		case keyboard.KeyPgdn:
@@ -116,27 +128,27 @@ func main() {
 				note.octave--
 			}
 		case keyboard.KeyEnter:
-			strings = []*GuitarString{}
+			strings = []VibratingString{}
 		case keyboard.KeyEsc:
 			return
 		default:
 			if ok {
 				strings = removeDeadStrings(strings, defaultDuration)
 				if overlap {
-					strings = append(strings, NewGuitarString(frequency, decay))
+					strings = append(strings, currentStringType.Pluck(frequency, decay))
 				} else {
-					strings = []*GuitarString{NewGuitarString(frequency, decay)}
+					strings = []VibratingString{currentStringType.Pluck(frequency, decay)}
 				}
 			}
 		}
-		s := fmt.Sprintf("note %s%d, frequency %.3f, decay factor %.3f, overlap %v, fx %v, %d ringing strings, char %c",
-			name, octave, frequency, decay, overlap, fxs, len(strings), char)
+		s := fmt.Sprintf("note %s%d, frequency %.3f, decay factor %.3f, overlap %v, type %v, fx %v, %d ringing strings, char %c",
+			name, octave, frequency, decay, overlap, currentStringType, fxs, len(strings), char)
 		fmt.Printf("\r%s", s)
 	}
 }
 
-func removeDeadStrings(strings []*GuitarString, duration int) []*GuitarString {
-	ringingStrings := []*GuitarString{}
+func removeDeadStrings(strings []VibratingString, duration int) []VibratingString {
+	ringingStrings := []VibratingString{}
 	for _, s := range strings {
 		if s.Time() > duration {
 			continue
@@ -146,7 +158,7 @@ func removeDeadStrings(strings []*GuitarString, duration int) []*GuitarString {
 	return ringingStrings
 }
 
-func stringSamples(strings []*GuitarString, fxs []fx) (float32, float32) {
+func stringSamples(strings []VibratingString, fxs []fx) (float32, float32) {
 	var sample float32
 	for _, s := range strings {
 		sample += s.Sample()
