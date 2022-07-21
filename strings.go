@@ -175,9 +175,9 @@ func (s *SinString) Tic() {
 func (s *SinString) Pluck(frequency, decayFactor float32) VibratingString {
 	capacity := int(float32(sampleRate) / frequency)
 	r := NewRingBuffer(capacity)
-	angle := 0.01 * math.Pi * frequency / float32(capacity)
+	angle := 2 * math.Pi / float32(capacity)
 	for i := 0; i < capacity; i++ {
-		v := 0.5 * float32(math.Sin(float64(angle)*float64(i)))
+		v := float32(math.Sin(float64(angle) * float64(i)))
 		err := r.Enqueue(v)
 		if err != nil {
 			panic(err)
@@ -193,4 +193,140 @@ func (s *SinString) Pluck(frequency, decayFactor float32) VibratingString {
 
 func (s *SinString) String() string {
 	return "sin"
+}
+
+type SawString struct {
+	BaseString
+}
+
+func (s *SawString) Tic() {
+	s.tics++
+	first, err := s.ringBuffer.Dequeue()
+	if err != nil {
+		panic(err)
+	}
+	second, err := s.ringBuffer.Peek()
+	if err != nil {
+		panic(err)
+	}
+	v := s.decayFactor * (first + second)
+	s.ringBuffer.Enqueue(v)
+}
+
+func (s *SawString) Pluck(frequency, decayFactor float32) VibratingString {
+	capacity := int(float32(sampleRate) / frequency)
+	r := NewRingBuffer(capacity)
+	limit := float32(1)
+	step := 2 * 4 / float32(capacity)
+	v := -limit
+	for i := 0; i < capacity; i++ {
+		v += step
+		if v >= limit {
+			v = -limit
+		}
+		err := r.Enqueue(v)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return &SawString{
+		BaseString: BaseString{
+			decayFactor: decayFactor,
+			ringBuffer:  r,
+		},
+	}
+}
+
+func (s *SawString) String() string {
+	return "saw"
+}
+
+type SquareString struct {
+	BaseString
+}
+
+func (s *SquareString) Tic() {
+	s.tics++
+	first, err := s.ringBuffer.Dequeue()
+	if err != nil {
+		panic(err)
+	}
+	second, err := s.ringBuffer.Peek()
+	if err != nil {
+		panic(err)
+	}
+	v := s.decayFactor * (first + second)
+	s.ringBuffer.Enqueue(v)
+}
+
+func (s *SquareString) Pluck(frequency, decayFactor float32) VibratingString {
+	capacity := int(float32(sampleRate) / frequency)
+	r := NewRingBuffer(capacity)
+	n := capacity / 2
+	v := float32(1)
+	for i := 0; i < capacity; i++ {
+		if i%n == 0 {
+			v = -v
+		}
+		err := r.Enqueue(v)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return &SawString{
+		BaseString: BaseString{
+			decayFactor: decayFactor,
+			ringBuffer:  r,
+		},
+	}
+}
+
+func (s *SquareString) String() string {
+	return "square"
+}
+
+type DoubleRampString struct {
+	BaseString
+}
+
+func (s *DoubleRampString) Tic() {
+	s.tics++
+	first, err := s.ringBuffer.Dequeue()
+	if err != nil {
+		panic(err)
+	}
+	second, err := s.ringBuffer.Peek()
+	if err != nil {
+		panic(err)
+	}
+	v := s.decayFactor * (first + second)
+	s.ringBuffer.Enqueue(v)
+}
+
+func (s *DoubleRampString) Pluck(frequency, decayFactor float32) VibratingString {
+	capacity := int(float32(sampleRate) / frequency)
+	r := NewRingBuffer(capacity)
+	limit := float32(1)
+	step := 2 * 2 / float32(capacity)
+	v := -limit
+	for i := 0; i < capacity; i++ {
+		v += step
+		if v >= limit || v <= -limit {
+			step = -step
+		}
+		err := r.Enqueue(v)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return &SawString{
+		BaseString: BaseString{
+			decayFactor: decayFactor,
+			ringBuffer:  r,
+		},
+	}
+}
+
+func (s *DoubleRampString) String() string {
+	return "triangle"
 }
