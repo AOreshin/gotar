@@ -78,7 +78,7 @@ func main() {
 	overlap := true
 	outOfPhase := false
 	softDistortion := false
-	stringTypes := []VibratingString{&GuitarString{}, &SynthString{}}
+	stringTypes := []VibratingString{&GuitarString{}, &RampAscString{}, &RampDescString{}, &SinString{}}
 	currentStringType := VibratingString(&GuitarString{})
 	currentStringIndex := 0
 
