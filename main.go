@@ -87,7 +87,7 @@ func main() {
 		&SquareString{},
 		&DoubleRampString{},
 	}
-	currentStringType := VibratingString(&GuitarString{})
+	currentStringTypes := []VibratingString{&GuitarString{}}
 	currentStringIndex := 0
 
 	for {
@@ -100,19 +100,23 @@ func main() {
 		if note != nil {
 			frequency, name, octave = note.frequency, note.name, note.octave
 		}
+		switch char {
+		case '[':
+			currentStringTypes = append(currentStringTypes, stringTypes[currentStringIndex])
+		case ']':
+			currentStringTypes = []VibratingString{stringTypes[currentStringIndex]}
+		}
 		switch key {
 		case keyboard.KeyArrowLeft:
 			currentStringIndex--
 			if currentStringIndex < 0 {
 				currentStringIndex = len(stringTypes) - 1
 			}
-			currentStringType = stringTypes[currentStringIndex]
 		case keyboard.KeyArrowRight:
 			currentStringIndex++
 			if currentStringIndex == len(stringTypes) {
 				currentStringIndex = 0
 			}
-			currentStringType = stringTypes[currentStringIndex]
 		case keyboard.KeyHome:
 			outOfPhase, fxs = switchFx(outOfPhase, outOfPhaseFx, fxs)
 		case keyboard.KeyEnd:
@@ -143,14 +147,20 @@ func main() {
 			if ok {
 				strings = removeDeadStrings(strings, defaultDuration)
 				if overlap {
-					strings = append(strings, currentStringType.Pluck(frequency, decay))
+					for _, strType := range currentStringTypes {
+						strings = append(strings, strType.Pluck(frequency, decay))
+					}
 				} else {
-					strings = []VibratingString{currentStringType.Pluck(frequency, decay)}
+					newStrings := []VibratingString{}
+					for _, strType := range currentStringTypes {
+						newStrings = append(newStrings, strType.Pluck(frequency, decay))
+					}
+					strings = newStrings
 				}
 			}
 		}
-		s := fmt.Sprintf("note %s%d, frequency %.3f, decay factor %.3f, overlap %v, type %v, fx %v, %d ringing strings, char %c",
-			name, octave, frequency, decay, overlap, currentStringType, fxs, len(strings), char)
+		s := fmt.Sprintf("note %s%d, frequency %.3f, decay factor %.3f, overlap %v, types %v, selected type %v, fx %v, %d ringing strings, char %c",
+			name, octave, frequency, decay, overlap, currentStringTypes, stringTypes[currentStringIndex], fxs, len(strings), char)
 		fmt.Printf("\r%s", s)
 	}
 }
