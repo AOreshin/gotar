@@ -21,6 +21,7 @@ const (
 	bitsPerSample   uint16 = 32
 	nameFormat             = "2006-02-01 15-04-05"
 	decayFactor            = float32(0.994 * 0.5)
+	floatToInt             = math.MaxInt32 / 4
 )
 
 func main() {
@@ -179,7 +180,7 @@ func removeDeadStrings(strings []VibratingString, duration int) []VibratingStrin
 func stringSamples(strings []VibratingString, fxs []fx) (float32, float32) {
 	var sample float32
 	for _, s := range strings {
-		sample += s.Sample()
+		sample += s.Sample() * 0.25
 		s.Tic()
 	}
 	if sample > 1 {
@@ -214,7 +215,7 @@ func printAvailableDevices(audio rtaudio.RtAudio) {
 
 func toWavSample(l, r float32) []wav.Sample {
 	return []wav.Sample{
-		{Values: [2]int{int(l * math.MaxInt32), int(r * math.MaxInt32)}},
+		{Values: [2]int{int(l * floatToInt), int(r * floatToInt)}},
 	}
 }
 
