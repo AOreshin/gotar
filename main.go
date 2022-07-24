@@ -17,7 +17,7 @@ const (
 	numSamples      uint32 = math.MaxUint32
 	numChannels     uint16 = 2
 	firstChannel    uint   = 0
-	sampleRate      uint32 = 44100
+	sampleRate      uint32 = 48000
 	bitsPerSample   uint16 = 32
 	nameFormat             = "2006-02-01 15-04-05"
 	decayFactor            = float32(0.994 * 0.5)
@@ -77,8 +77,11 @@ func main() {
 
 	decay := decayFactor
 	overlap := true
-	outOfPhase := false
-	softDistortion := false
+	fxTypes := []fx{
+		outOfPhaseFx,
+		vibrato,
+	}
+	currentFxIndex := 0
 	stringTypes := []VibratingString{
 		&GuitarString{},
 		&RampAscString{},
@@ -102,10 +105,24 @@ func main() {
 			frequency, name, octave = note.frequency, note.name, note.octave
 		}
 		switch char {
-		case '[':
+		case ';':
 			currentStringTypes = append(currentStringTypes, stringTypes[currentStringIndex])
-		case ']':
+		case '\'':
 			currentStringTypes = []VibratingString{stringTypes[currentStringIndex]}
+		case '[':
+			currentFxIndex--
+			if currentFxIndex < 0 {
+				currentFxIndex = len(fxTypes) - 1
+			}
+		case ']':
+			currentFxIndex++
+			if currentFxIndex == len(fxTypes) {
+				currentFxIndex = 0
+			}
+		case '-':
+			fxs = append(fxs, fxTypes[currentFxIndex])
+		case '+':
+			fxs = []fx{}
 		}
 		switch key {
 		case keyboard.KeyArrowLeft:
@@ -118,10 +135,6 @@ func main() {
 			if currentStringIndex == len(stringTypes) {
 				currentStringIndex = 0
 			}
-		case keyboard.KeyHome:
-			outOfPhase, fxs = switchFx(outOfPhase, outOfPhaseFx, fxs)
-		case keyboard.KeyEnd:
-			softDistortion, fxs = switchFx(softDistortion, softDistortionFx, fxs)
 		case keyboard.KeySpace:
 			overlap = !overlap
 		case keyboard.KeyPgdn:
@@ -160,8 +173,8 @@ func main() {
 				}
 			}
 		}
-		s := fmt.Sprintf("note %s%d, frequency %.3f, decay factor %.3f, overlap %v, types %v, selected type %v, fx %v, %d ringing strings, char %c",
-			name, octave, frequency, decay, overlap, currentStringTypes, stringTypes[currentStringIndex], fxs, len(strings), char)
+		s := fmt.Sprintf("note %s%d, frequency %.3f, decay factor %.3f, overlap %v, types %v, selected type %v, fx %v, selected fx %v, %d ringing strings, char %c",
+			name, octave, frequency, decay, overlap, currentStringTypes, stringTypes[currentStringIndex], fxs, fxTypes[currentFxIndex], len(strings), char)
 		fmt.Printf("\r%s", s)
 	}
 }
@@ -231,23 +244,4 @@ func rtAudioOptions() *rtaudio.StreamOptions {
 	return &rtaudio.StreamOptions{
 		Flags: rtaudio.FlagsMinimizeLatency,
 	}
-}
-
-func removeFx(fxs []fx, f fx) []fx {
-	for i, v := range fxs {
-		if f.name == v.name {
-			return append(fxs[:i], fxs[i+1:]...)
-		}
-	}
-	return fxs
-}
-
-func switchFx(flag bool, f fx, fxs []fx) (bool, []fx) {
-	flag = !flag
-	if flag {
-		fxs = append(fxs, f)
-	} else {
-		fxs = removeFx(fxs, f)
-	}
-	return flag, fxs
 }
