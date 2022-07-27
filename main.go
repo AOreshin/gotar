@@ -173,9 +173,19 @@ func main() {
 				}
 			}
 		}
-		s := fmt.Sprintf("note %s%d, frequency %.3f, decay factor %.3f, overlap %v, types %v, selected type %v, fx %v, selected fx %v, %d ringing strings, char %c",
+		fmt.Print("\033[2J")
+		fmt.Printf(`
+note %s%d, frequency %.3f
+decay factor %.3f
+overlap %v
+types %v
+selected type %v
+fx %v
+selected fx %v
+%d ringing strings
+char %c
+`,
 			name, octave, frequency, decay, overlap, currentStringTypes, stringTypes[currentStringIndex], fxs, fxTypes[currentFxIndex], len(strings), char)
-		fmt.Printf("\r%s", s)
 	}
 }
 
