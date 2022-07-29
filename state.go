@@ -1,5 +1,11 @@
 package main
 
+import (
+	"os"
+
+	"github.com/youpy/go-wav"
+)
+
 type state struct {
 	stringTypes        []VibratingString
 	currentStringTypes []VibratingString
@@ -9,6 +15,9 @@ type state struct {
 	activeFx           []fx
 	currentFxIndex     int
 	overlap            bool
+	record             bool
+	writer             *wav.Writer
+	file               *os.File
 	decay              float32
 }
 
@@ -31,5 +40,6 @@ var initialState = &state{
 	activeFx:       []fx{},
 	currentFxIndex: 0,
 	overlap:        true,
+	record:         false,
 	decay:          decayFactor,
 }

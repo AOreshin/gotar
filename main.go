@@ -1,10 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math"
+	"os"
 
-	// "os"
 	"time"
 
 	"github.com/eiannone/keyboard"
@@ -26,14 +27,6 @@ const (
 )
 
 func main() {
-	// outfile, err := os.Create(time.Now().Format(nameFormat) + ".wav")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer outfile.Close()
-
-	// writer := wav.NewWriter(outfile, numSamples, numChannels, sampleRate, bitsPerSample)
-
 	audio, err := rtaudio.Create(rtaudio.APIUnspecified)
 	if err != nil {
 		panic(err)
@@ -49,16 +42,22 @@ func main() {
 			l, r := stringSamples(initialState.ringingStrings, initialState.activeFx)
 			samples[i*2], samples[i*2+1] = l, r
 
-			// s := toWavSample(l, r)
-			// err = writer.WriteSamples(s)
-			// if err != nil {
-			// 	panic(err)
-			// }
+			if initialState.record && initialState.writer != nil {
+				s := toWavSample(l, r)
+				err = initialState.writer.WriteSamples(s)
+				if err != nil {
+					if errors.Is(err, os.ErrClosed) {
+						return 0
+					}
+					panic(err)
+				}
+			}
 		}
 		return 0
 	}
 
-	err = audio.Open(rtAudioParams(audio), nil, rtaudio.FormatFloat32, uint(sampleRate), buffer, cb, rtAudioOptions())
+	err = audio.Open(rtAudioParams(audio), nil, rtaudio.FormatFloat32,
+		uint(sampleRate), buffer, cb, rtAudioOptions())
 	if err != nil {
 		panic(err)
 	}
@@ -106,6 +105,20 @@ func inputHandler(s *state) {
 			s.activeFx = append(s.activeFx, s.fxTypes[s.currentFxIndex])
 		case '=':
 			s.activeFx = []fx{}
+		case '\\':
+			s.record = !s.record
+			if s.record {
+				name := time.Now().Format(nameFormat) + ".wav"
+				outfile, err := os.Create(name)
+				if err != nil {
+					panic(err)
+				}
+				s.file = outfile
+				defer outfile.Close()
+				s.writer = wav.NewWriter(outfile, numSamples, numChannels, sampleRate, bitsPerSample)
+			} else {
+				s.file.Close()
+			}
 		}
 		switch key {
 		case keyboard.KeyArrowLeft:
@@ -167,8 +180,13 @@ func printState(r rune, n *note, s *state) {
 		n = &note{}
 	}
 	fmt.Print("\033[u")
-	fmt.Printf("note \033[1;32m%s%d\033[0m frequency \033[1;32m%.3f\033[0m\r\n", n.name, n.octave, n.frequency)
+	fmt.Printf("note \033[1;32m%s%d\033[0m frequency \033[1;32m%.3f\033[0m\r\n",
+		n.name, n.octave, n.frequency)
 	fmt.Printf("decay factor \033[1;32m%.3f\033[0m\r\n", s.decay)
+	fmt.Printf("record \033[1;32m%v\033[0m\r\n", s.record)
+	if s.record {
+		fmt.Printf("writing to \033[1;32m%v\033[0m\r\n", s.file.Name())
+	}
 	fmt.Printf("overlap \033[1;32m%v\033[0m\r\n", s.overlap)
 	fmt.Printf("types \033[1;32m%v\033[0m\r\n", s.currentStringTypes)
 	fmt.Printf("selected type \033[1;32m%v\033[0m\r\n", s.stringTypes[s.currentStringIndex])
