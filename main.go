@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
-	"os"
+	// "os"
 	"time"
 
 	"github.com/eiannone/keyboard"
@@ -17,7 +17,7 @@ const (
 	numSamples      uint32 = math.MaxUint32
 	numChannels     uint16 = 2
 	firstChannel    uint   = 0
-	sampleRate      uint32 = 48000
+	sampleRate      uint32 = 44100
 	bitsPerSample   uint16 = 32
 	nameFormat             = "2006-02-01 15-04-05"
 	decayFactor            = float32(0.994 * 0.5)
@@ -25,13 +25,13 @@ const (
 )
 
 func main() {
-	outfile, err := os.Create(time.Now().Format(nameFormat) + ".wav")
-	if err != nil {
-		panic(err)
-	}
-	defer outfile.Close()
+	// outfile, err := os.Create(time.Now().Format(nameFormat) + ".wav")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer outfile.Close()
 
-	writer := wav.NewWriter(outfile, numSamples, numChannels, sampleRate, bitsPerSample)
+	// writer := wav.NewWriter(outfile, numSamples, numChannels, sampleRate, bitsPerSample)
 
 	audio, err := rtaudio.Create(rtaudio.APIUnspecified)
 	if err != nil {
@@ -42,20 +42,17 @@ func main() {
 	printAvailableApis()
 	printAvailableDevices(audio)
 
-	strings := []VibratingString{}
-	fxs := []fx{}
-
 	cb := func(out, in rtaudio.Buffer, dur time.Duration, status rtaudio.StreamStatus) int {
 		samples := out.Float32()
 		for i := 0; i < len(samples)/2; i++ {
-			l, r := stringSamples(strings, fxs)
+			l, r := stringSamples(initialState.ringingStrings, initialState.activeFx)
 			samples[i*2], samples[i*2+1] = l, r
 
-			s := toWavSample(l, r)
-			err = writer.WriteSamples(s)
-			if err != nil {
-				panic(err)
-			}
+			// s := toWavSample(l, r)
+			// err = writer.WriteSamples(s)
+			// if err != nil {
+			// 	panic(err)
+			// }
 		}
 		return 0
 	}
@@ -75,72 +72,57 @@ func main() {
 	}
 	defer keyboard.Close()
 
-	decay := decayFactor
-	overlap := true
-	fxTypes := []fx{
-		outOfPhaseFx,
-		vibrato,
-	}
-	currentFxIndex := 0
-	stringTypes := []VibratingString{
-		&GuitarString{},
-		&RampAscString{},
-		&RampDescString{},
-		&SinString{},
-		&SawString{},
-		&SquareString{},
-		&DoubleRampString{},
-	}
-	currentStringTypes := []VibratingString{&GuitarString{}}
-	currentStringIndex := 0
+	fmt.Print("\n\n\n\n\n\n\n\n\n")
 
+	inputHandler(initialState)
+}
+
+func inputHandler(s *state) {
 	for {
 		char, key, err := keyboard.GetKey()
 		if err != nil {
 			panic(err)
 		}
 		note, ok := keysToNotes[char]
-		frequency, name, octave := float32(0.0), "", 0
-		if note != nil {
-			frequency, name, octave = note.frequency, note.name, note.octave
-		}
 		switch char {
 		case ';':
-			currentStringTypes = append(currentStringTypes, stringTypes[currentStringIndex])
+			s.currentStringTypes =
+				append(s.currentStringTypes, s.stringTypes[s.currentStringIndex])
 		case '\'':
-			currentStringTypes = []VibratingString{stringTypes[currentStringIndex]}
+			s.currentStringTypes =
+				[]VibratingString{s.stringTypes[s.currentStringIndex]}
 		case '[':
-			currentFxIndex--
-			if currentFxIndex < 0 {
-				currentFxIndex = len(fxTypes) - 1
+			s.currentFxIndex--
+			if s.currentFxIndex < 0 {
+				s.currentFxIndex = len(s.fxTypes) - 1
 			}
 		case ']':
-			currentFxIndex++
-			if currentFxIndex == len(fxTypes) {
-				currentFxIndex = 0
+			s.currentFxIndex++
+			if s.currentFxIndex == len(s.fxTypes) {
+				s.currentFxIndex = 0
 			}
 		case '-':
-			fxs = append(fxs, fxTypes[currentFxIndex])
+			s.activeFx = append(s.activeFx, s.fxTypes[s.currentFxIndex])
 		case '+':
-			fxs = []fx{}
+			s.activeFx = []fx{}
 		}
 		switch key {
 		case keyboard.KeyArrowLeft:
-			currentStringIndex--
-			if currentStringIndex < 0 {
-				currentStringIndex = len(stringTypes) - 1
+			s.currentStringIndex--
+			if s.currentStringIndex < 0 {
+				s.currentStringIndex = len(s.stringTypes) - 1
 			}
 		case keyboard.KeyArrowRight:
-			currentStringIndex++
-			if currentStringIndex == len(stringTypes) {
-				currentStringIndex = 0
+			s.currentStringIndex++
+			if s.currentStringIndex == len(s.stringTypes) {
+				s.currentStringIndex = 0
 			}
 		case keyboard.KeySpace:
-			overlap = !overlap
+			s.overlap = !s.overlap
 		case keyboard.KeyPgdn:
-			decay -= 0.001
+			s.decay -= 0.001
 		case keyboard.KeyPgup:
-			decay += 0.001
+			s.decay += 0.001
 		case keyboard.KeyArrowUp:
 			for k := range keysToNotes {
 				note := keysToNotes[k]
@@ -154,27 +136,40 @@ func main() {
 				note.octave--
 			}
 		case keyboard.KeyEnter:
-			strings = []VibratingString{}
+			s.ringingStrings = []VibratingString{}
 		case keyboard.KeyEsc:
 			return
 		default:
 			if ok {
-				strings = removeDeadStrings(strings, defaultDuration)
-				if overlap {
-					for _, strType := range currentStringTypes {
-						strings = append(strings, strType.Pluck(frequency, decay))
+				s.ringingStrings = removeDeadStrings(s.ringingStrings, defaultDuration)
+				if s.overlap {
+					for _, strType := range s.currentStringTypes {
+						s.ringingStrings = append(s.ringingStrings,
+							strType.Pluck(note.frequency, s.decay))
 					}
 				} else {
 					newStrings := []VibratingString{}
-					for _, strType := range currentStringTypes {
-						newStrings = append(newStrings, strType.Pluck(frequency, decay))
+					for _, strType := range s.currentStringTypes {
+						newStrings = append(newStrings,
+							strType.Pluck(note.frequency, s.decay))
 					}
-					strings = newStrings
+					s.ringingStrings = newStrings
 				}
 			}
 		}
-		fmt.Print("\033[2J")
-		fmt.Printf(`
+		printState(char, note, s)
+	}
+}
+
+func printState(r rune, n *note, s *state) {
+	if n == nil {
+		n = &note{}
+	}
+	for i := 0; i < 9; i++ {
+		fmt.Print("\033[A")
+		fmt.Print("\033[2K")
+	}
+	fmt.Printf(`
 note %s%d, frequency %.3f
 decay factor %.3f
 overlap %v
@@ -185,8 +180,18 @@ selected fx %v
 %d ringing strings
 char %c
 `,
-			name, octave, frequency, decay, overlap, currentStringTypes, stringTypes[currentStringIndex], fxs, fxTypes[currentFxIndex], len(strings), char)
-	}
+		n.name,
+		n.octave,
+		n.frequency,
+		s.decay,
+		s.overlap,
+		s.currentStringTypes,
+		s.stringTypes[s.currentStringIndex],
+		s.activeFx,
+		s.fxTypes[s.currentFxIndex],
+		len(s.ringingStrings),
+		r,
+	)
 }
 
 func removeDeadStrings(strings []VibratingString, duration int) []VibratingString {
