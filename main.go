@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+
 	// "os"
 	"time"
 
@@ -72,7 +73,7 @@ func main() {
 	}
 	defer keyboard.Close()
 
-	fmt.Print("\n\n\n\n\n\n\n\n\n")
+	fmt.Print("\n\033[s")
 
 	inputHandler(initialState)
 }
@@ -103,7 +104,7 @@ func inputHandler(s *state) {
 			}
 		case '-':
 			s.activeFx = append(s.activeFx, s.fxTypes[s.currentFxIndex])
-		case '+':
+		case '=':
 			s.activeFx = []fx{}
 		}
 		switch key {
@@ -165,33 +166,16 @@ func printState(r rune, n *note, s *state) {
 	if n == nil {
 		n = &note{}
 	}
-	for i := 0; i < 9; i++ {
-		fmt.Print("\033[A")
-		fmt.Print("\033[2K")
-	}
-	fmt.Printf(`
-note %s%d, frequency %.3f
-decay factor %.3f
-overlap %v
-types %v
-selected type %v
-fx %v
-selected fx %v
-%d ringing strings
-char %c
-`,
-		n.name,
-		n.octave,
-		n.frequency,
-		s.decay,
-		s.overlap,
-		s.currentStringTypes,
-		s.stringTypes[s.currentStringIndex],
-		s.activeFx,
-		s.fxTypes[s.currentFxIndex],
-		len(s.ringingStrings),
-		r,
-	)
+	fmt.Print("\033[u")
+	fmt.Printf("note \033[1;32m%s%d\033[0m frequency \033[1;32m%.3f\033[0m\r\n", n.name, n.octave, n.frequency)
+	fmt.Printf("decay factor \033[1;32m%.3f\033[0m\r\n", s.decay)
+	fmt.Printf("overlap \033[1;32m%v\033[0m\r\n", s.overlap)
+	fmt.Printf("types \033[1;32m%v\033[0m\r\n", s.currentStringTypes)
+	fmt.Printf("selected type \033[1;32m%v\033[0m\r\n", s.stringTypes[s.currentStringIndex])
+	fmt.Printf("fx type \033[1;32m%v\033[0m\r\n", s.activeFx)
+	fmt.Printf("selected fx \033[1;32m%v\033[0m\r\n", s.fxTypes[s.currentFxIndex])
+	fmt.Printf("\033[1;32m%d\033[0m ringing strings\r\n", len(s.ringingStrings))
+	fmt.Printf("char \033[1;32m%c\033[0m\r\n", r)
 }
 
 func removeDeadStrings(strings []VibratingString, duration int) []VibratingString {
