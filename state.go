@@ -19,6 +19,9 @@ type state struct {
 	writer             *wav.Writer
 	file               *os.File
 	decay              float32
+	recordLoop         bool
+	loop               [2]*PeekBuffer
+	loops              [][2]*PeekBuffer
 }
 
 var initialState = &state{

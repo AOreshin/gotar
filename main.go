@@ -39,7 +39,22 @@ func main() {
 	cb := func(out, in rtaudio.Buffer, dur time.Duration, status rtaudio.StreamStatus) int {
 		samples := out.Float32()
 		for i := 0; i < len(samples)/2; i++ {
-			l, r := stringSamples(initialState.ringingStrings, initialState.activeFx)
+			l, r := stringSamples(
+				initialState.ringingStrings,
+				initialState.activeFx,
+			)
+
+			if initialState.recordLoop {
+				initialState.loop[0].Append(l)
+				initialState.loop[1].Append(r)
+			}
+
+			for i := 0; i < len(initialState.loops); i++ {
+				loop := initialState.loops[i]
+				l += loop[0].Peek()
+				r += loop[1].Peek()
+			}
+
 			samples[i*2], samples[i*2+1] = l, r
 
 			if initialState.record && initialState.writer != nil {
@@ -121,6 +136,17 @@ func inputHandler(s *state) {
 			}
 		}
 		switch key {
+		case keyboard.KeyHome:
+			s.recordLoop = !s.recordLoop
+			if s.recordLoop {
+				s.loop = [2]*PeekBuffer{{}, {}}
+			} else {
+				s.loops = append(s.loops, s.loop)
+			}
+		case keyboard.KeyEnd:
+			if len(s.loops) > 0 {
+				s.loops = s.loops[:len(s.loops)-1]
+			}
 		case keyboard.KeyArrowLeft:
 			s.currentStringIndex--
 			if s.currentStringIndex < 0 {
@@ -193,6 +219,8 @@ func printState(r rune, n *note, s *state) {
 	fmt.Printf("fx type \033[1;32m%v\033[0m\r\n", s.activeFx)
 	fmt.Printf("selected fx \033[1;32m%v\033[0m\r\n", s.fxTypes[s.currentFxIndex])
 	fmt.Printf("\033[1;32m%d\033[0m ringing strings\r\n", len(s.ringingStrings))
+	fmt.Printf("recording loop \033[1;32m%v\033[0m\r\n", s.recordLoop)
+	fmt.Printf("\033[1;32m%d\033[0m loops playing\r\n", len(s.loops))
 	fmt.Printf("char \033[1;32m%c\033[0m\r\n", r)
 }
 
