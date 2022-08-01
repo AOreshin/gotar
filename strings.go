@@ -30,22 +30,22 @@ func (b *BaseString) Time() int {
 	return b.tics
 }
 
-type GuitarString struct {
-	BaseString
+func (b *BaseString) Tic() {
+	b.tics++
+	first, err := b.ringBuffer.Dequeue()
+	if err != nil {
+		panic(err)
+	}
+	second, err := b.ringBuffer.Peek()
+	if err != nil {
+		panic(err)
+	}
+	v := b.decayFactor * (first + second)
+	b.ringBuffer.Enqueue(v)
 }
 
-func (g *GuitarString) Tic() {
-	g.tics++
-	first, err := g.ringBuffer.Dequeue()
-	if err != nil {
-		panic(err)
-	}
-	second, err := g.ringBuffer.Peek()
-	if err != nil {
-		panic(err)
-	}
-	v := g.decayFactor * (first + second)
-	g.ringBuffer.Enqueue(v)
+type GuitarString struct {
+	BaseString
 }
 
 func (g *GuitarString) Pluck(frequency, decayFactor float32) VibratingString {
@@ -72,20 +72,6 @@ func (g *GuitarString) String() string {
 
 type RampAscString struct {
 	BaseString
-}
-
-func (s *RampAscString) Tic() {
-	s.tics++
-	first, err := s.ringBuffer.Dequeue()
-	if err != nil {
-		panic(err)
-	}
-	second, err := s.ringBuffer.Peek()
-	if err != nil {
-		panic(err)
-	}
-	v := s.decayFactor * (first + second)
-	s.ringBuffer.Enqueue(v)
 }
 
 func (s *RampAscString) Pluck(frequency, decayFactor float32) VibratingString {
@@ -116,20 +102,6 @@ type RampDescString struct {
 	BaseString
 }
 
-func (s *RampDescString) Tic() {
-	s.tics++
-	first, err := s.ringBuffer.Dequeue()
-	if err != nil {
-		panic(err)
-	}
-	second, err := s.ringBuffer.Peek()
-	if err != nil {
-		panic(err)
-	}
-	v := s.decayFactor * (first + second)
-	s.ringBuffer.Enqueue(v)
-}
-
 func (s *RampDescString) Pluck(frequency, decayFactor float32) VibratingString {
 	capacity := int(float32(sampleRate) / frequency)
 	r := NewRingBuffer(capacity)
@@ -158,20 +130,6 @@ type SinString struct {
 	BaseString
 }
 
-func (s *SinString) Tic() {
-	s.tics++
-	first, err := s.ringBuffer.Dequeue()
-	if err != nil {
-		panic(err)
-	}
-	second, err := s.ringBuffer.Peek()
-	if err != nil {
-		panic(err)
-	}
-	v := s.decayFactor * (first + second)
-	s.ringBuffer.Enqueue(v)
-}
-
 func (s *SinString) Pluck(frequency, decayFactor float32) VibratingString {
 	capacity := int(float32(sampleRate) / frequency)
 	r := NewRingBuffer(capacity)
@@ -197,20 +155,6 @@ func (s *SinString) String() string {
 
 type SawString struct {
 	BaseString
-}
-
-func (s *SawString) Tic() {
-	s.tics++
-	first, err := s.ringBuffer.Dequeue()
-	if err != nil {
-		panic(err)
-	}
-	second, err := s.ringBuffer.Peek()
-	if err != nil {
-		panic(err)
-	}
-	v := s.decayFactor * (first + second)
-	s.ringBuffer.Enqueue(v)
 }
 
 func (s *SawString) Pluck(frequency, decayFactor float32) VibratingString {
@@ -245,20 +189,6 @@ type SquareString struct {
 	BaseString
 }
 
-func (s *SquareString) Tic() {
-	s.tics++
-	first, err := s.ringBuffer.Dequeue()
-	if err != nil {
-		panic(err)
-	}
-	second, err := s.ringBuffer.Peek()
-	if err != nil {
-		panic(err)
-	}
-	v := s.decayFactor * (first + second)
-	s.ringBuffer.Enqueue(v)
-}
-
 func (s *SquareString) Pluck(frequency, decayFactor float32) VibratingString {
 	capacity := int(float32(sampleRate) / frequency)
 	r := NewRingBuffer(capacity)
@@ -287,20 +217,6 @@ func (s *SquareString) String() string {
 
 type DoubleRampString struct {
 	BaseString
-}
-
-func (s *DoubleRampString) Tic() {
-	s.tics++
-	first, err := s.ringBuffer.Dequeue()
-	if err != nil {
-		panic(err)
-	}
-	second, err := s.ringBuffer.Peek()
-	if err != nil {
-		panic(err)
-	}
-	v := s.decayFactor * (first + second)
-	s.ringBuffer.Enqueue(v)
 }
 
 func (s *DoubleRampString) Pluck(frequency, decayFactor float32) VibratingString {
