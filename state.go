@@ -22,6 +22,7 @@ type state struct {
 	recordLoop         bool
 	loop               [2]*PeekBuffer
 	loops              [][2]*PeekBuffer
+	volume             float32
 }
 
 var initialState = &state{
@@ -46,4 +47,5 @@ var initialState = &state{
 	overlap:        true,
 	record:         false,
 	decay:          decayFactor,
+	volume:         1.0,
 }

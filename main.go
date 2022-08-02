@@ -19,7 +19,7 @@ const (
 	numSamples      uint32 = math.MaxUint32
 	numChannels     uint16 = 2
 	firstChannel    uint   = 0
-	sampleRate      uint32 = 44100
+	sampleRate      uint32 = 48000
 	bitsPerSample   uint16 = 32
 	nameFormat             = "2006-02-01 15-04-05"
 	decayFactor            = float32(0.994 * 0.5)
@@ -43,6 +43,9 @@ func main() {
 				initialState.ringingStrings,
 				initialState.activeFx,
 			)
+
+			v := initialState.volume
+			l, r = l*v, r*v
 
 			if initialState.recordLoop {
 				initialState.loop[0].Append(l)
@@ -134,6 +137,10 @@ func inputHandler(s *state) {
 			} else {
 				s.file.Close()
 			}
+		case '@':
+			s.volume += 0.01
+		case '#':
+			s.volume -= 0.01
 		}
 		switch key {
 		case keyboard.KeyHome:
@@ -209,6 +216,7 @@ func printState(r rune, n *note, s *state) {
 	fmt.Printf("note \033[1;32m%s%d\033[0m frequency \033[1;32m%.3f\033[0m\r\n",
 		n.name, n.octave, n.frequency)
 	fmt.Printf("decay factor \033[1;32m%.3f\033[0m\r\n", s.decay)
+	fmt.Printf("volume \033[1;32m%.3f\033[0m\r\n", s.volume)
 	fmt.Printf("record \033[1;32m%v\033[0m\r\n", s.record)
 	if s.record {
 		fmt.Printf("writing to \033[1;32m%v\033[0m\r\n", s.file.Name())
