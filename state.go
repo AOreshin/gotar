@@ -33,6 +33,7 @@ var initialState = &state{
 		&SawString{},
 		&SquareString{},
 		&DoubleRampString{},
+		&DrumString{},
 	},
 	currentStringTypes: []VibratingString{&GuitarString{}},
 	currentStringIndex: 0,

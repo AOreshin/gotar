@@ -246,3 +246,15 @@ func (s *DoubleRampString) Pluck(frequency, decayFactor float32) VibratingString
 func (s *DoubleRampString) String() string {
 	return "triangle"
 }
+
+type DrumString struct {
+	GuitarString
+}
+
+func (s *DrumString) Pluck(frequency, decayFactor float32) VibratingString {
+	return s.GuitarString.Pluck(frequency, 0.01*decayFactor)
+}
+
+func (s *DrumString) String() string {
+	return "drum"
+}
