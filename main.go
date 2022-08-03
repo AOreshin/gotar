@@ -19,7 +19,7 @@ const (
 	numSamples      uint32 = math.MaxUint32
 	numChannels     uint16 = 2
 	firstChannel    uint   = 0
-	sampleRate      uint32 = 48000
+	sampleRate      uint32 = 44100
 	bitsPerSample   uint16 = 32
 	nameFormat             = "2006-02-01 15-04-05"
 	decayFactor            = float32(0.994 * 0.5)
@@ -36,46 +36,8 @@ func main() {
 	printAvailableApis()
 	printAvailableDevices(audio)
 
-	cb := func(out, in rtaudio.Buffer, dur time.Duration, status rtaudio.StreamStatus) int {
-		samples := out.Float32()
-		for i := 0; i < len(samples)/2; i++ {
-			l, r := stringSamples(
-				initialState.ringingStrings,
-				initialState.activeFx,
-			)
-
-			v := initialState.volume
-			l, r = l*v, r*v
-
-			if initialState.recordLoop {
-				initialState.loop[0].Append(l)
-				initialState.loop[1].Append(r)
-			}
-
-			for i := 0; i < len(initialState.loops); i++ {
-				loop := initialState.loops[i]
-				l += loop[0].Peek()
-				r += loop[1].Peek()
-			}
-
-			samples[i*2], samples[i*2+1] = l, r
-
-			if initialState.record && initialState.writer != nil {
-				s := toWavSample(l, r)
-				err = initialState.writer.WriteSamples(s)
-				if err != nil {
-					if errors.Is(err, os.ErrClosed) {
-						return 0
-					}
-					panic(err)
-				}
-			}
-		}
-		return 0
-	}
-
 	err = audio.Open(rtAudioParams(audio), nil, rtaudio.FormatFloat32,
-		uint(sampleRate), buffer, cb, rtAudioOptions())
+		uint(sampleRate), buffer, callback, rtAudioOptions())
 	if err != nil {
 		panic(err)
 	}
@@ -90,12 +52,12 @@ func main() {
 	}
 	defer keyboard.Close()
 
-	fmt.Print("\n\033[s")
-
-	inputHandler(initialState)
+	handleInput()
 }
 
-func inputHandler(s *state) {
+func handleInput() {
+	fmt.Print("\n\033[s")
+
 	for {
 		char, key, err := keyboard.GetKey()
 		if err != nil {
@@ -104,72 +66,87 @@ func inputHandler(s *state) {
 		note, ok := keysToNotes[char]
 		switch char {
 		case ';':
-			s.currentStringTypes =
-				append(s.currentStringTypes, s.stringTypes[s.currentStringIndex])
+			initialState.currentStringTypes =
+				append(initialState.currentStringTypes, initialState.stringTypes[initialState.currentStringIndex])
 		case '\'':
-			s.currentStringTypes =
-				[]VibratingString{s.stringTypes[s.currentStringIndex]}
+			initialState.currentStringTypes =
+				[]VibratingString{initialState.stringTypes[initialState.currentStringIndex]}
 		case '[':
-			s.currentFxIndex--
-			if s.currentFxIndex < 0 {
-				s.currentFxIndex = len(s.fxTypes) - 1
+			initialState.currentFxIndex--
+			if initialState.currentFxIndex < 0 {
+				initialState.currentFxIndex = len(initialState.fxTypes) - 1
 			}
 		case ']':
-			s.currentFxIndex++
-			if s.currentFxIndex == len(s.fxTypes) {
-				s.currentFxIndex = 0
+			initialState.currentFxIndex++
+			if initialState.currentFxIndex == len(initialState.fxTypes) {
+				initialState.currentFxIndex = 0
 			}
 		case '-':
-			s.activeFx = append(s.activeFx, s.fxTypes[s.currentFxIndex])
+			initialState.activeFx = append(initialState.activeFx, initialState.fxTypes[initialState.currentFxIndex])
 		case '=':
-			s.activeFx = []fx{}
+			initialState.activeFx = []fx{}
 		case '\\':
-			s.record = !s.record
-			if s.record {
+			initialState.record = !initialState.record
+			if initialState.record {
 				name := time.Now().Format(nameFormat) + ".wav"
 				outfile, err := os.Create(name)
 				if err != nil {
 					panic(err)
 				}
-				s.file = outfile
+				initialState.file = outfile
 				defer outfile.Close()
-				s.writer = wav.NewWriter(outfile, numSamples, numChannels, sampleRate, bitsPerSample)
+				initialState.writer = wav.NewWriter(outfile, numSamples, numChannels, sampleRate, bitsPerSample)
 			} else {
-				s.file.Close()
+				initialState.file.Close()
 			}
 		case '@':
-			s.volume += 0.01
+			initialState.volume += 0.01
 		case '#':
-			s.volume -= 0.01
+			initialState.volume -= 0.01
 		}
 		switch key {
 		case keyboard.KeyHome:
-			s.recordLoop = !s.recordLoop
-			if s.recordLoop {
-				s.loop = [2]*PeekBuffer{{}, {}}
+			initialState.recordLoop = !initialState.recordLoop
+			if initialState.recordLoop {
+				initialState.loop = [2]*PeekBuffer{{}, {}}
 			} else {
-				s.loops = append(s.loops, s.loop)
+				initialState.recordLoopStarted = false
+				if len(initialState.loops) != 0 {
+					baseLoopLen := len(initialState.loops[0])
+					newLoopLen := len(initialState.loop)
+					if newLoopLen > baseLoopLen {
+						initialState.loop[0].Cut(baseLoopLen)
+						initialState.loop[1].Cut(baseLoopLen)
+						initialState.loops = append(initialState.loops, initialState.loop)
+					} else {
+						for i := 0; i < baseLoopLen-newLoopLen; i++ {
+							initialState.loop[0].Append(0.0)
+							initialState.loop[1].Append(0.0)
+						}
+					}
+				}
+				initialState.loops = append(initialState.loops, initialState.loop)
 			}
 		case keyboard.KeyEnd:
-			if len(s.loops) > 0 {
-				s.loops = s.loops[:len(s.loops)-1]
+			if len(initialState.loops) > 0 {
+				initialState.loops = initialState.loops[:len(initialState.loops)-1]
 			}
 		case keyboard.KeyArrowLeft:
-			s.currentStringIndex--
-			if s.currentStringIndex < 0 {
-				s.currentStringIndex = len(s.stringTypes) - 1
+			initialState.currentStringIndex--
+			if initialState.currentStringIndex < 0 {
+				initialState.currentStringIndex = len(initialState.stringTypes) - 1
 			}
 		case keyboard.KeyArrowRight:
-			s.currentStringIndex++
-			if s.currentStringIndex == len(s.stringTypes) {
-				s.currentStringIndex = 0
+			initialState.currentStringIndex++
+			if initialState.currentStringIndex == len(initialState.stringTypes) {
+				initialState.currentStringIndex = 0
 			}
 		case keyboard.KeySpace:
-			s.overlap = !s.overlap
+			initialState.overlap = !initialState.overlap
 		case keyboard.KeyPgdn:
-			s.decay -= 0.001
+			initialState.decay -= 0.001
 		case keyboard.KeyPgup:
-			s.decay += 0.001
+			initialState.decay += 0.001
 		case keyboard.KeyArrowUp:
 			for k := range keysToNotes {
 				note := keysToNotes[k]
@@ -183,53 +160,77 @@ func inputHandler(s *state) {
 				note.octave--
 			}
 		case keyboard.KeyEnter:
-			s.ringingStrings = []VibratingString{}
+			initialState.ringingStrings = []VibratingString{}
 		case keyboard.KeyEsc:
 			return
 		default:
 			if ok {
-				s.ringingStrings = removeDeadStrings(s.ringingStrings, defaultDuration)
-				if s.overlap {
-					for _, strType := range s.currentStringTypes {
-						s.ringingStrings = append(s.ringingStrings,
-							strType.Pluck(note.frequency, s.decay))
+				initialState.ringingStrings = removeDeadStrings(initialState.ringingStrings, defaultDuration)
+				if initialState.overlap {
+					for _, strType := range initialState.currentStringTypes {
+						initialState.ringingStrings = append(initialState.ringingStrings,
+							strType.Pluck(note.frequency, initialState.decay))
 					}
 				} else {
 					newStrings := []VibratingString{}
-					for _, strType := range s.currentStringTypes {
+					for _, strType := range initialState.currentStringTypes {
 						newStrings = append(newStrings,
-							strType.Pluck(note.frequency, s.decay))
+							strType.Pluck(note.frequency, initialState.decay))
 					}
-					s.ringingStrings = newStrings
+					initialState.ringingStrings = newStrings
 				}
 			}
 		}
-		printState(char, note, s)
+		printState(char, note, initialState)
 	}
 }
 
-func printState(r rune, n *note, s *state) {
-	if n == nil {
-		n = &note{}
+func callback(out, in rtaudio.Buffer, dur time.Duration, status rtaudio.StreamStatus) int {
+	samples := out.Float32()
+	for i := 0; i < len(samples)/2; i++ {
+		l, r := stringSamples(
+			initialState.ringingStrings,
+			initialState.activeFx,
+		)
+
+		v := initialState.volume
+		l, r = l*v, r*v
+
+		if initialState.recordLoop {
+			if len(initialState.loops) == 0 {
+				initialState.recordLoopStarted = true
+			} else {
+				if initialState.loops[0][0].AtStart() {
+					initialState.recordLoopStarted = true
+				}
+			}
+		}
+
+		if initialState.recordLoopStarted {
+			initialState.loop[0].Append(l)
+			initialState.loop[1].Append(r)
+		}
+
+		for i := 0; i < len(initialState.loops); i++ {
+			loop := initialState.loops[i]
+			l += loop[0].Peek()
+			r += loop[1].Peek()
+		}
+
+		samples[i*2], samples[i*2+1] = l, r
+
+		if initialState.record && initialState.writer != nil {
+			s := toWavSample(l, r)
+			err := initialState.writer.WriteSamples(s)
+			if err != nil {
+				if errors.Is(err, os.ErrClosed) {
+					return 0
+				}
+				panic(err)
+			}
+		}
 	}
-	fmt.Print("\033[u")
-	fmt.Printf("note \033[1;32m%s%d\033[0m frequency \033[1;32m%.3f\033[0m\r\n",
-		n.name, n.octave, n.frequency)
-	fmt.Printf("decay factor \033[1;32m%.3f\033[0m\r\n", s.decay)
-	fmt.Printf("volume \033[1;32m%.3f\033[0m\r\n", s.volume)
-	fmt.Printf("record \033[1;32m%v\033[0m\r\n", s.record)
-	if s.record {
-		fmt.Printf("writing to \033[1;32m%v\033[0m\r\n", s.file.Name())
-	}
-	fmt.Printf("overlap \033[1;32m%v\033[0m\r\n", s.overlap)
-	fmt.Printf("types \033[1;32m%v\033[0m\r\n", s.currentStringTypes)
-	fmt.Printf("selected type \033[1;32m%v\033[0m\r\n", s.stringTypes[s.currentStringIndex])
-	fmt.Printf("fx type \033[1;32m%v\033[0m\r\n", s.activeFx)
-	fmt.Printf("selected fx \033[1;32m%v\033[0m\r\n", s.fxTypes[s.currentFxIndex])
-	fmt.Printf("\033[1;32m%d\033[0m ringing strings\r\n", len(s.ringingStrings))
-	fmt.Printf("recording loop \033[1;32m%v\033[0m\r\n", s.recordLoop)
-	fmt.Printf("\033[1;32m%d\033[0m loops playing\r\n", len(s.loops))
-	fmt.Printf("char \033[1;32m%c\033[0m\r\n", r)
+	return 0
 }
 
 func removeDeadStrings(strings []VibratingString, duration int) []VibratingString {
@@ -260,23 +261,6 @@ func stringSamples(strings []VibratingString, fxs []fx) (float32, float32) {
 		l, r = f.apply(l, r)
 	}
 	return l, r
-}
-
-func printAvailableApis() {
-	fmt.Println("RtAudio version: ", rtaudio.Version())
-	for _, api := range rtaudio.CompiledAPI() {
-		fmt.Println("Compiled API: ", api)
-	}
-}
-
-func printAvailableDevices(audio rtaudio.RtAudio) {
-	devices, err := audio.Devices()
-	if err != nil {
-		panic(err)
-	}
-	for _, d := range devices {
-		fmt.Printf("Audio device: %#v\n", d)
-	}
 }
 
 func toWavSample(l, r float32) []wav.Sample {
