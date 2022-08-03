@@ -29,7 +29,7 @@ func callback(out, in rtaudio.Buffer, dur time.Duration, status rtaudio.StreamSt
 
 func stringsSample() float32 {
 	var sample float32
-	for _, s := range g.ringingStrings {
+	for _, s := range sState.ringingStrings {
 		sample += s.Sample() * 0.25
 		s.Tic()
 	}
@@ -47,30 +47,30 @@ func limitSample(sample float32) float32 {
 }
 
 func applyFx(l, r float32) (float32, float32) {
-	for _, f := range g.activeFx {
+	for _, f := range fState.activeFx {
 		l, r = f.apply(l, r)
 	}
 	return l, r
 }
 
 func adjustVolume(l, r float32) (float32, float32) {
-	v := g.volume
+	v := vState.volume
 	return l * v, r * v
 }
 
 func recordLoop(l, r float32) {
-	if g.recordLoop {
-		g.loop[0].Append(l)
-		g.loop[1].Append(r)
+	if lState.recordLoop {
+		lState.loop[0].Append(l)
+		lState.loop[1].Append(r)
 	}
 }
 
 func playLoops(l, r float32) (float32, float32) {
-	if len(g.loops) > 0 && g.playLoop {
-		baseLoopIndex := g.loops[0][0].Tic()
-		g.loops[0][1].Tic()
-		for i := 0; i < len(g.loops); i++ {
-			loop := g.loops[i]
+	if len(lState.loops) > 0 && lState.playLoop {
+		baseLoopIndex := lState.loops[0][0].Tic()
+		lState.loops[0][1].Tic()
+		for i := 0; i < len(lState.loops); i++ {
+			loop := lState.loops[i]
 			l += loop[0].Get(baseLoopIndex)
 			r += loop[1].Get(baseLoopIndex)
 		}
@@ -79,9 +79,9 @@ func playLoops(l, r float32) (float32, float32) {
 }
 
 func recordToFile(l, r float32) {
-	if g.record && g.writer != nil {
+	if rState.record && rState.writer != nil {
 		s := toWavSample(l, r)
-		err := g.writer.WriteSamples(s)
+		err := rState.writer.WriteSamples(s)
 		if err != nil {
 			if !errors.Is(err, os.ErrClosed) {
 				panic(err)

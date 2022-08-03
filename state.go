@@ -6,48 +6,70 @@ import (
 	"github.com/youpy/go-wav"
 )
 
-type state struct {
+type stringsState struct {
 	stringTypes        []VibratingString
 	currentStringTypes []VibratingString
 	ringingStrings     []VibratingString
-	currentStringIndex int
-	fxTypes            []fx
-	activeFx           []fx
-	currentFxIndex     int
-	overlap            bool
-	record             bool
-	writer             *wav.Writer
-	file               *os.File
 	decay              float32
-	recordLoop         bool
-	playLoop           bool
-	loop               [2]*PeekBuffer
-	loops              [][2]*PeekBuffer
-	volume             float32
+	overlap            bool
+	currentStringIndex int
 }
 
-var g = &state{
-	stringTypes: []VibratingString{
-		&GuitarString{},
-		&RampAscString{},
-		&RampDescString{},
-		&SinString{},
-		&SawString{},
-		&SquareString{},
-		&DoubleRampString{},
-		&DrumString{},
-	},
-	currentStringTypes: []VibratingString{&GuitarString{}},
-	currentStringIndex: 0,
-	fxTypes: []fx{
-		outOfPhaseFx,
-		vibrato,
-	},
-	activeFx:       []fx{},
-	currentFxIndex: 0,
-	overlap:        true,
-	record:         false,
-	decay:          decayFactor,
-	volume:         1.0,
-	playLoop:       true,
+type fxState struct {
+	fxTypes        []fx
+	activeFx       []fx
+	currentFxIndex int
 }
+
+type recordState struct {
+	record bool
+	writer *wav.Writer
+	file   *os.File
+}
+
+type loopState struct {
+	recordLoop bool
+	playLoop   bool
+	loop       [2]*PeekBuffer
+	loops      [][2]*PeekBuffer
+}
+
+type volumeState struct {
+	volume float32
+}
+
+var (
+	sState = &stringsState{
+		stringTypes: []VibratingString{
+			&GuitarString{},
+			&RampAscString{},
+			&RampDescString{},
+			&SinString{},
+			&SawString{},
+			&SquareString{},
+			&DoubleRampString{},
+			&DrumString{},
+		},
+		currentStringTypes: []VibratingString{&GuitarString{}},
+		currentStringIndex: 0,
+		overlap:            true,
+		decay:              decayFactor,
+	}
+	fState = &fxState{
+		fxTypes: []fx{
+			outOfPhaseFx,
+			vibrato,
+		},
+		activeFx:       []fx{},
+		currentFxIndex: 0,
+	}
+	rState = &recordState{
+		record: false,
+	}
+	vState = &volumeState{
+		volume: 1.0,
+	}
+	lState = &loopState{
+		playLoop: true,
+	}
+)

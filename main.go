@@ -65,74 +65,74 @@ func handleInput() {
 		note, ok := keysToNotes[char]
 		switch char {
 		case ';':
-			g.currentStringTypes =
-				append(g.currentStringTypes, g.stringTypes[g.currentStringIndex])
+			sState.currentStringTypes =
+				append(sState.currentStringTypes, sState.stringTypes[sState.currentStringIndex])
 		case '\'':
-			g.currentStringTypes =
-				[]VibratingString{g.stringTypes[g.currentStringIndex]}
+			sState.currentStringTypes =
+				[]VibratingString{sState.stringTypes[sState.currentStringIndex]}
 		case '[':
-			g.currentFxIndex--
-			if g.currentFxIndex < 0 {
-				g.currentFxIndex = len(g.fxTypes) - 1
+			fState.currentFxIndex--
+			if fState.currentFxIndex < 0 {
+				fState.currentFxIndex = len(fState.fxTypes) - 1
 			}
 		case ']':
-			g.currentFxIndex++
-			if g.currentFxIndex == len(g.fxTypes) {
-				g.currentFxIndex = 0
+			fState.currentFxIndex++
+			if fState.currentFxIndex == len(fState.fxTypes) {
+				fState.currentFxIndex = 0
 			}
 		case '-':
-			g.activeFx = append(g.activeFx, g.fxTypes[g.currentFxIndex])
+			fState.activeFx = append(fState.activeFx, fState.fxTypes[fState.currentFxIndex])
 		case '=':
-			g.activeFx = []fx{}
+			fState.activeFx = []fx{}
 		case '\\':
-			g.record = !g.record
-			if g.record {
+			rState.record = !rState.record
+			if rState.record {
 				name := time.Now().Format(nameFormat) + ".wav"
 				outfile, err := os.Create(name)
 				if err != nil {
 					panic(err)
 				}
-				g.file = outfile
+				rState.file = outfile
 				defer outfile.Close()
-				g.writer = wav.NewWriter(outfile, numSamples, numChannels, sampleRate, bitsPerSample)
+				rState.writer = wav.NewWriter(outfile, numSamples, numChannels, sampleRate, bitsPerSample)
 			} else {
-				g.file.Close()
+				rState.file.Close()
 			}
 		case '@':
-			g.volume += 0.01
+			vState.volume += 0.01
 		case '#':
-			g.volume -= 0.01
+			vState.volume -= 0.01
 		}
 		switch key {
 		case keyboard.KeyTab:
-			g.playLoop = !g.playLoop
+			lState.playLoop = !lState.playLoop
 		case keyboard.KeyHome:
-			g.recordLoop = !g.recordLoop
-			if g.recordLoop {
-				g.loop = [2]*PeekBuffer{{}, {}}
+			lState.recordLoop = !lState.recordLoop
+			if lState.recordLoop {
+				lState.loop = [2]*PeekBuffer{{}, {}}
 			} else {
-				g.loops = append(g.loops, g.loop)
+				lState.loops = append(lState.loops, lState.loop)
 			}
 		case keyboard.KeyEnd:
-			if len(g.loops) > 0 {
-				g.loops = g.loops[:len(g.loops)-1]
+			if len(lState.loops) > 0 {
+				lState.loops = lState.loops[:len(lState.loops)-1]
 			}
 		case keyboard.KeyArrowLeft:
-			g.currentStringIndex--
-			if g.currentStringIndex < 0 {
-				g.currentStringIndex = len(g.stringTypes) - 1
+			sState.currentStringIndex--
+			if sState.currentStringIndex < 0 {
+				sState.currentStringIndex = len(sState.stringTypes) - 1
 			}
 		case keyboard.KeyArrowRight:
-			g.currentStringIndex++
-			if g.currentStringIndex == len(g.stringTypes) {
-				g.currentStringIndex = 0
+			sState.currentStringIndex++
+			if sState.currentStringIndex == len(sState.stringTypes) {
+				sState.currentStringIndex = 0
 			}
 		case keyboard.KeySpace:
-			g.overlap = !g.overlap
+			sState.overlap = !sState.overlap
 		case keyboard.KeyPgdn:
-			g.decay -= 0.001
+			sState.decay -= 0.001
 		case keyboard.KeyPgup:
-			g.decay += 0.001
+			sState.decay += 0.001
 		case keyboard.KeyArrowUp:
 			for k := range keysToNotes {
 				note := keysToNotes[k]
@@ -146,28 +146,28 @@ func handleInput() {
 				note.octave--
 			}
 		case keyboard.KeyEnter:
-			g.ringingStrings = []VibratingString{}
+			sState.ringingStrings = []VibratingString{}
 		case keyboard.KeyEsc:
 			return
 		default:
 			if ok {
-				g.ringingStrings = removeDeadStrings(g.ringingStrings, defaultDuration)
-				if g.overlap {
-					for _, strType := range g.currentStringTypes {
-						g.ringingStrings = append(g.ringingStrings,
-							strType.Pluck(note.frequency, g.decay))
+				sState.ringingStrings = removeDeadStrings(sState.ringingStrings, defaultDuration)
+				if sState.overlap {
+					for _, strType := range sState.currentStringTypes {
+						sState.ringingStrings = append(sState.ringingStrings,
+							strType.Pluck(note.frequency, sState.decay))
 					}
 				} else {
 					newStrings := []VibratingString{}
-					for _, strType := range g.currentStringTypes {
+					for _, strType := range sState.currentStringTypes {
 						newStrings = append(newStrings,
-							strType.Pluck(note.frequency, g.decay))
+							strType.Pluck(note.frequency, sState.decay))
 					}
-					g.ringingStrings = newStrings
+					sState.ringingStrings = newStrings
 				}
 			}
 		}
-		printState(char, note, g)
+		printState(char, note)
 	}
 }
 
