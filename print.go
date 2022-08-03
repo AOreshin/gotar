@@ -43,6 +43,7 @@ func printState(r rune, n *note, s *state) {
 	fmt.Printf("selected fx \033[1;32m%v\033[0m\r\n", s.fxTypes[s.currentFxIndex])
 	fmt.Printf("\033[1;32m%d\033[0m ringing strings\r\n", len(s.ringingStrings))
 	fmt.Printf("recording loop \033[1;32m%v\033[0m\r\n", s.recordLoop)
+	fmt.Printf("play recorded loops \033[1;32m%v\033[0m\r\n", s.playLoop)
 	fmt.Printf("\033[1;32m%d\033[0m loops playing\r\n", len(s.loops))
 	fmt.Printf("char \033[1;32m%c\033[0m\r\n", r)
 }

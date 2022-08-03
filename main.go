@@ -105,6 +105,8 @@ func handleInput() {
 			g.volume -= 0.01
 		}
 		switch key {
+		case keyboard.KeyTab:
+			g.playLoop = !g.playLoop
 		case keyboard.KeyHome:
 			g.recordLoop = !g.recordLoop
 			if g.recordLoop {
@@ -186,7 +188,7 @@ func callback(out, in rtaudio.Buffer, dur time.Duration, status rtaudio.StreamSt
 			g.loop[1].Append(r)
 		}
 
-		if len(g.loops) > 0 {
+		if len(g.loops) > 0 && g.playLoop {
 			baseLoopIndex := g.loops[0][0].Tic()
 			g.loops[0][1].Tic()
 			for i := 0; i < len(g.loops); i++ {

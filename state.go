@@ -20,6 +20,7 @@ type state struct {
 	file               *os.File
 	decay              float32
 	recordLoop         bool
+	playLoop           bool
 	loop               [2]*PeekBuffer
 	loops              [][2]*PeekBuffer
 	volume             float32
@@ -48,4 +49,5 @@ var g = &state{
 	record:         false,
 	decay:          decayFactor,
 	volume:         1.0,
+	playLoop:       true,
 }
