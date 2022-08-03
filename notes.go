@@ -6,7 +6,7 @@ type note struct {
 	octave    int
 }
 
-var keysToNotes = map[rune]*note{
+var runesToNotes = map[rune]*note{
 	'q': {110, "A", 2},
 	'2': {116.54, "Bb", 2},
 	'w': {123.47, "B", 2},
