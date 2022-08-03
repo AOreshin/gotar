@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -172,48 +171,6 @@ func handleInput() {
 	}
 }
 
-func callback(out, in rtaudio.Buffer, dur time.Duration, status rtaudio.StreamStatus) int {
-	samples := out.Float32()
-	for i := 0; i < len(samples)/2; i++ {
-		l, r := stringSamples(
-			g.ringingStrings,
-			g.activeFx,
-		)
-
-		v := g.volume
-		l, r = l*v, r*v
-
-		if g.recordLoop {
-			g.loop[0].Append(l)
-			g.loop[1].Append(r)
-		}
-
-		if len(g.loops) > 0 && g.playLoop {
-			baseLoopIndex := g.loops[0][0].Tic()
-			g.loops[0][1].Tic()
-			for i := 0; i < len(g.loops); i++ {
-				loop := g.loops[i]
-				l += loop[0].Get(baseLoopIndex)
-				r += loop[1].Get(baseLoopIndex)
-			}
-		}
-
-		samples[i*2], samples[i*2+1] = l, r
-
-		if g.record && g.writer != nil {
-			s := toWavSample(l, r)
-			err := g.writer.WriteSamples(s)
-			if err != nil {
-				if errors.Is(err, os.ErrClosed) {
-					return 0
-				}
-				panic(err)
-			}
-		}
-	}
-	return 0
-}
-
 func removeDeadStrings(strings []VibratingString, duration int) []VibratingString {
 	ringingStrings := []VibratingString{}
 	for _, s := range strings {
@@ -223,31 +180,6 @@ func removeDeadStrings(strings []VibratingString, duration int) []VibratingStrin
 		ringingStrings = append(ringingStrings, s)
 	}
 	return ringingStrings
-}
-
-func stringSamples(strings []VibratingString, fxs []fx) (float32, float32) {
-	var sample float32
-	for _, s := range strings {
-		sample += s.Sample() * 0.25
-		s.Tic()
-	}
-	if sample > 1 {
-		sample = 1
-	}
-	if sample < -1 {
-		sample = -1
-	}
-	l, r := sample, sample
-	for _, f := range fxs {
-		l, r = f.apply(l, r)
-	}
-	return l, r
-}
-
-func toWavSample(l, r float32) []wav.Sample {
-	return []wav.Sample{
-		{Values: [2]int{int(l * floatToInt), int(r * floatToInt)}},
-	}
 }
 
 func rtAudioParams(audio rtaudio.RtAudio) *rtaudio.StreamParams {
