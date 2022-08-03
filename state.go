@@ -20,13 +20,12 @@ type state struct {
 	file               *os.File
 	decay              float32
 	recordLoop         bool
-	recordLoopStarted  bool
 	loop               [2]*PeekBuffer
 	loops              [][2]*PeekBuffer
 	volume             float32
 }
 
-var initialState = &state{
+var g = &state{
 	stringTypes: []VibratingString{
 		&GuitarString{},
 		&RampAscString{},
