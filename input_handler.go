@@ -31,7 +31,7 @@ func handleInput() {
 
 		note, ok := runesToNotes[r]
 		if ok {
-			updateRingingStrings(note)
+			pluckString(note)
 		}
 
 		printState(r, note)
@@ -152,7 +152,7 @@ func handleStrings(r rune, k keyboard.Key) {
 	}
 }
 
-func updateRingingStrings(n *note) {
+func pluckString(n *note) {
 	sState.ringingStrings = removeDeadStrings(sState.ringingStrings, defaultDuration)
 	if sState.overlap {
 		for _, strType := range sState.currentStringTypes {
