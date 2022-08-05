@@ -47,8 +47,10 @@ func limitSample(sample float32) float32 {
 }
 
 func applyFx(l, r float32) (float32, float32) {
-	for _, f := range fState.activeFx {
-		l, r = f.apply(l, r)
+	if !fState.bypassFx {
+		for _, f := range fState.activeFx {
+			l, r = f.apply(l, r)
+		}
 	}
 	return l, r
 }

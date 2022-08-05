@@ -35,6 +35,7 @@ func printState(r rune, n *note) {
 	fmt.Printf("\033[1;32m%d\033[0m ringing strings\r\n", len(sState.ringingStrings))
 	fmt.Printf("types \033[1;32m%v\033[0m\r\n", sState.currentStringTypes)
 	fmt.Printf("selected type \033[1;32m%v\033[0m\r\n", sState.stringTypes[sState.currentStringIndex])
+	fmt.Printf("bypass fx \033[1;32m%v\033[0m\r\n", fState.bypassFx)
 	fmt.Printf("fx type \033[1;32m%v\033[0m\r\n", fState.activeFx)
 	fmt.Printf("selected fx \033[1;32m%v\033[0m\r\n", fState.fxTypes[fState.currentFxIndex])
 	fmt.Printf("volume \033[1;32m%.3f\033[0m\r\n", vState.volume)

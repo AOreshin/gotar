@@ -19,6 +19,7 @@ type fxState struct {
 	fxTypes        []fx
 	activeFx       []fx
 	currentFxIndex int
+	bypassFx       bool
 }
 
 type recordState struct {

@@ -63,6 +63,8 @@ func handleFx(r rune) {
 		fState.activeFx = append(fState.activeFx, fState.fxTypes[fState.currentFxIndex])
 	case '=':
 		fState.activeFx = []fx{}
+	case '0':
+		fState.bypassFx = !fState.bypassFx
 	}
 }
 
