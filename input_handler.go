@@ -79,7 +79,6 @@ func handleRecord(r rune) {
 				panic(err)
 			}
 			rState.file = outfile
-			defer outfile.Close()
 			rState.writer = wav.NewWriter(outfile, numSamples, numChannels, sampleRate, bitsPerSample)
 		} else {
 			rState.file.Close()

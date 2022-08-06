@@ -46,6 +46,8 @@ func main() {
 	}
 	defer keyboard.Close()
 
+	defer rState.file.Close()
+
 	handleInput()
 }
 
