@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
+	github.com/gdamore/tcell/v2 v2.6.0
 	github.com/rivo/tview v0.0.0-20230406072732-e22ce9588bb4
 	github.com/stretchr/testify v1.8.0
 	github.com/yanel/go-rtaudio v0.0.0-20200617062709-05619787091b
@@ -13,7 +14,6 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect
-	github.com/gdamore/tcell/v2 v2.6.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

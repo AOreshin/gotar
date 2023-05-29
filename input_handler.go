@@ -10,15 +10,15 @@ import (
 	"github.com/youpy/go-wav"
 )
 
-func handleKey(key *tcell.EventKey) {
-	handleStrings(key)
+func handleKeys(event *tcell.EventKey) {
+	handleStrings(event)
 	// changeOctaves(k)
 	// handleFx(r)
 	// handleRecord(r)
 	// handleVolume(r)
 	// handleLoops(k)
 
-	r := key.Rune()
+	r := event.Rune()
 	note, ok := runesToNotes[r]
 	if ok {
 		pluckString(note)
@@ -41,7 +41,7 @@ func handleInput() {
 		}
 
 		// handleStrings(k)
-		changeOctaves(k)
+		// handleOctave / s(k)
 		handleFx(r)
 		handleRecord(r)
 		handleVolume(r)
@@ -122,15 +122,15 @@ func handleLoops(k keyboard.Key) {
 	}
 }
 
-func changeOctaves(k keyboard.Key) {
-	switch k {
-	case keyboard.KeyArrowUp:
+func handleOctaves(event *tcell.EventKey) {
+	switch event.Key() {
+	case tcell.KeyUp:
 		for k := range runesToNotes {
 			note := runesToNotes[k]
 			note.frequency *= 2
 			note.octave++
 		}
-	case keyboard.KeyArrowDown:
+	case tcell.KeyDown:
 		for k := range runesToNotes {
 			note := runesToNotes[k]
 			note.frequency /= 2

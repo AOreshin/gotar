@@ -14,7 +14,7 @@ const (
 	numSamples      uint32 = math.MaxUint32
 	numChannels     uint16 = 2
 	firstChannel    uint   = 0
-	sampleRate      uint32 = 48000
+	sampleRate      uint32 = 44100
 	bitsPerSample   uint16 = 32
 	nameFormat             = "2006-02-01 15-04-05"
 	decayFactor            = float32(0.994 * 0.5)
@@ -43,33 +43,32 @@ func main() {
 
 	app := tview.NewApplication()
 
-	note := tview.NewTextView().
-		SetDynamicColors(true).
-		SetRegions(true).
-		SetChangedFunc(func() {
-			app.Draw()
-		})
+	note := tview.NewTextView()
 	note.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		handleKey(event)
+		handleKeys(event)
 		if runesToNotes[event.Rune()] != nil {
 			note.SetText(runesToNotes[event.Rune()].String() + "\nRune: " + string(event.Rune()))
 		}
-		return nil
+		return event
 	}).
 		SetBorder(true).
 		SetTitle("Last note pressed")
 
-	// flex := tview.NewFlex().
-	// 	AddItem(note, 0, 1, false).
-	// 	SetBorder(true).
-	// 	SetTitle("gotar").
-	// 	SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-	// 		handleKey(event)
-	// 		note.SetText(event.Name())
-	// 		return nil
-	// 	})
+	octave := tview.NewTextView()
+	octave.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		handleOctaves(event)
+		if runesToNotes[event.Rune()] != nil {
+			note.SetText(runesToNotes[event.Rune()].String() + "\nRune: " + string(event.Rune()))
+		}
+		return event
+	}).
+		SetBorder(true).
+		SetTitle("Octave")
 
-	err = app.SetRoot(note, true).Run()
+	flex := tview.NewFlex().
+		AddItem(note, 0, 1, true).
+		AddItem(octave, 0, 1, true)
+	err = app.SetRoot(flex, true).Run()
 	if err != nil {
 		panic(err)
 	}
