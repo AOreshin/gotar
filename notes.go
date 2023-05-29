@@ -1,9 +1,18 @@
 package main
 
+import "fmt"
+
 type note struct {
 	frequency float32
 	name      string
 	octave    int
+}
+
+func (n *note) String() string {
+	if n == nil {
+		return ""
+	}
+	return fmt.Sprintf("Name: %s\nOctave: %d\nFrequency: %.3f", n.name, n.octave, n.frequency)
 }
 
 var runesToNotes = map[rune]*note{

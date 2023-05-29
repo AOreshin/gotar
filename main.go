@@ -3,7 +3,8 @@ package main
 import (
 	"math"
 
-	"github.com/eiannone/keyboard"
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 	"github.com/yanel/go-rtaudio/src/contrib/go/rtaudio"
 )
 
@@ -13,7 +14,7 @@ const (
 	numSamples      uint32 = math.MaxUint32
 	numChannels     uint16 = 2
 	firstChannel    uint   = 0
-	sampleRate      uint32 = 44100
+	sampleRate      uint32 = 48000
 	bitsPerSample   uint16 = 32
 	nameFormat             = "2006-02-01 15-04-05"
 	decayFactor            = float32(0.994 * 0.5)
@@ -40,15 +41,38 @@ func main() {
 	audio.Start()
 	defer audio.Stop()
 
-	err = keyboard.Open()
+	app := tview.NewApplication()
+
+	note := tview.NewTextView().
+		SetDynamicColors(true).
+		SetRegions(true).
+		SetChangedFunc(func() {
+			app.Draw()
+		})
+	note.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		handleKey(event)
+		if runesToNotes[event.Rune()] != nil {
+			note.SetText(runesToNotes[event.Rune()].String() + "\nRune: " + string(event.Rune()))
+		}
+		return nil
+	}).
+		SetBorder(true).
+		SetTitle("Last note pressed")
+
+	// flex := tview.NewFlex().
+	// 	AddItem(note, 0, 1, false).
+	// 	SetBorder(true).
+	// 	SetTitle("gotar").
+	// 	SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	// 		handleKey(event)
+	// 		note.SetText(event.Name())
+	// 		return nil
+	// 	})
+
+	err = app.SetRoot(note, true).Run()
 	if err != nil {
 		panic(err)
 	}
-	defer keyboard.Close()
-
-	defer rState.file.Close()
-
-	handleInput()
 }
 
 func rtAudioParams(audio rtaudio.RtAudio) *rtaudio.StreamParams {

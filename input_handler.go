@@ -6,8 +6,26 @@ import (
 	"time"
 
 	"github.com/eiannone/keyboard"
+	"github.com/gdamore/tcell/v2"
 	"github.com/youpy/go-wav"
 )
+
+func handleKey(key *tcell.EventKey) {
+	handleStrings(key)
+	// changeOctaves(k)
+	// handleFx(r)
+	// handleRecord(r)
+	// handleVolume(r)
+	// handleLoops(k)
+
+	r := key.Rune()
+	note, ok := runesToNotes[r]
+	if ok {
+		pluckString(note)
+	}
+
+	// printState(r, note)
+}
 
 func handleInput() {
 	fmt.Print("\n\033[s")
@@ -22,7 +40,7 @@ func handleInput() {
 			return
 		}
 
-		handleStrings(r, k)
+		// handleStrings(k)
 		changeOctaves(k)
 		handleFx(r)
 		handleRecord(r)
@@ -121,8 +139,8 @@ func changeOctaves(k keyboard.Key) {
 	}
 }
 
-func handleStrings(r rune, k keyboard.Key) {
-	switch r {
+func handleStrings(key *tcell.EventKey) {
+	switch key.Rune() {
 	case ';':
 		sState.currentStringTypes =
 			append(sState.currentStringTypes, sState.stringTypes[sState.currentStringIndex])
@@ -131,24 +149,24 @@ func handleStrings(r rune, k keyboard.Key) {
 			[]VibratingString{sState.stringTypes[sState.currentStringIndex]}
 	}
 
-	switch k {
-	case keyboard.KeyArrowLeft:
+	switch key.Key() {
+	case tcell.KeyLeft:
 		sState.currentStringIndex--
 		if sState.currentStringIndex < 0 {
 			sState.currentStringIndex = len(sState.stringTypes) - 1
 		}
-	case keyboard.KeyArrowRight:
+	case tcell.KeyRight:
 		sState.currentStringIndex++
 		if sState.currentStringIndex == len(sState.stringTypes) {
 			sState.currentStringIndex = 0
 		}
-	case keyboard.KeySpace:
+	case tcell.KeyCenter:
 		sState.overlap = !sState.overlap
-	case keyboard.KeyPgdn:
+	case tcell.KeyPgDn:
 		sState.decay -= 0.001
-	case keyboard.KeyPgup:
+	case tcell.KeyPgUp:
 		sState.decay += 0.001
-	case keyboard.KeyEnter:
+	case tcell.KeyEnter:
 		sState.ringingStrings = []VibratingString{}
 	}
 }
