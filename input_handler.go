@@ -7,24 +7,21 @@ import (
 
 	"github.com/eiannone/keyboard"
 	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 	"github.com/youpy/go-wav"
 )
 
-func handleKeys(event *tcell.EventKey) {
+func handleKeys(event *tcell.EventKey, view *tview.TextView) {
 	handleStrings(event)
-	// changeOctaves(k)
-	// handleFx(r)
-	// handleRecord(r)
-	// handleVolume(r)
-	// handleLoops(k)
 
 	r := event.Rune()
 	note, ok := runesToNotes[r]
-	if ok {
-		pluckString(note)
+	if !ok {
+		return
 	}
+	pluckString(note)
 
-	// printState(r, note)
+	view.SetText(runesToNotes[event.Rune()].String() + "\nRune: " + string(event.Rune()))
 }
 
 func handleInput() {
@@ -122,7 +119,7 @@ func handleLoops(k keyboard.Key) {
 	}
 }
 
-func handleOctaves(event *tcell.EventKey) {
+func handleOctaves(event *tcell.EventKey, view *tview.TextView) {
 	switch event.Key() {
 	case tcell.KeyUp:
 		for k := range runesToNotes {

@@ -41,34 +41,32 @@ func main() {
 	audio.Start()
 	defer audio.Stop()
 
-	app := tview.NewApplication()
-
 	note := tview.NewTextView()
-	note.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		handleKeys(event)
-		if runesToNotes[event.Rune()] != nil {
-			note.SetText(runesToNotes[event.Rune()].String() + "\nRune: " + string(event.Rune()))
-		}
-		return event
-	}).
+	note.SetTextAlign(tview.AlignCenter).
 		SetBorder(true).
 		SetTitle("Last note pressed")
 
 	octave := tview.NewTextView()
-	octave.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		handleOctaves(event)
-		if runesToNotes[event.Rune()] != nil {
-			note.SetText(runesToNotes[event.Rune()].String() + "\nRune: " + string(event.Rune()))
-		}
-		return event
-	}).
+	octave.SetText("0").
+		SetTextAlign(tview.AlignCenter).
 		SetBorder(true).
-		SetTitle("Octave")
+		SetTitle("Octave shift")
+
+	header := tview.NewTextView()
+	header.SetBorder(true).
+		SetTitle("gotar").
+		SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			handleKeys(event, note)
+			handleOctaves(event, octave)
+			return nil
+		})
 
 	flex := tview.NewFlex().
-		AddItem(note, 0, 1, true).
-		AddItem(octave, 0, 1, true)
-	err = app.SetRoot(flex, true).Run()
+		AddItem(header, 0, 1, true).
+		AddItem(note, 0, 1, false).
+		AddItem(octave, 0, 1, false)
+
+	err = tview.NewApplication().SetRoot(flex, true).Run()
 	if err != nil {
 		panic(err)
 	}
