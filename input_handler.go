@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/eiannone/keyboard"
@@ -120,6 +121,12 @@ func handleLoops(k keyboard.Key) {
 }
 
 func handleOctaves(event *tcell.EventKey, view *tview.TextView) {
+	currectOctaveStr := view.GetText(true)
+	currentOctave, err := strconv.Atoi(currectOctaveStr)
+	if err != nil {
+		panic(err)
+	}
+
 	switch event.Key() {
 	case tcell.KeyUp:
 		for k := range runesToNotes {
@@ -127,13 +134,17 @@ func handleOctaves(event *tcell.EventKey, view *tview.TextView) {
 			note.frequency *= 2
 			note.octave++
 		}
+		currentOctave++
 	case tcell.KeyDown:
 		for k := range runesToNotes {
 			note := runesToNotes[k]
 			note.frequency /= 2
 			note.octave--
 		}
+		currentOctave--
 	}
+
+	view.SetText(strconv.Itoa(currentOctave))
 }
 
 func handleStrings(key *tcell.EventKey) {
