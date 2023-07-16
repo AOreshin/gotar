@@ -121,8 +121,8 @@ func handleLoops(k keyboard.Key) {
 }
 
 func handleOctaves(event *tcell.EventKey, view *tview.TextView) {
-	currectOctaveStr := view.GetText(true)
-	currentOctave, err := strconv.Atoi(currectOctaveStr)
+	currentOctaveStr := view.GetText(true)
+	currentOctave, err := strconv.Atoi(currentOctaveStr)
 	if err != nil {
 		panic(err)
 	}
@@ -147,6 +147,14 @@ func handleOctaves(event *tcell.EventKey, view *tview.TextView) {
 	view.SetText(strconv.Itoa(currentOctave))
 }
 
+func handlePolyphonic(event *tcell.EventKey, view *tview.TextView) {
+	if event.Key() == tcell.KeyEnter {
+		sState.polyphonic = !sState.polyphonic
+	}
+
+	view.SetText(strconv.FormatBool(sState.polyphonic))
+}
+
 func handleStrings(key *tcell.EventKey) {
 	switch key.Rune() {
 	case ';':
@@ -168,20 +176,18 @@ func handleStrings(key *tcell.EventKey) {
 		if sState.currentStringIndex == len(sState.stringTypes) {
 			sState.currentStringIndex = 0
 		}
-	case tcell.KeyCenter:
-		sState.overlap = !sState.overlap
 	case tcell.KeyPgDn:
 		sState.decay -= 0.001
 	case tcell.KeyPgUp:
 		sState.decay += 0.001
-	case tcell.KeyEnter:
-		sState.ringingStrings = []VibratingString{}
+		// case tcell.KeyEnter:
+		// 	sState.ringingStrings = []VibratingString{}
 	}
 }
 
 func pluckString(n *note) {
 	sState.ringingStrings = removeDeadStrings(sState.ringingStrings, defaultDuration)
-	if sState.overlap {
+	if sState.polyphonic {
 		for _, strType := range sState.currentStringTypes {
 			sState.ringingStrings = append(sState.ringingStrings,
 				strType.Pluck(n.frequency, sState.decay))

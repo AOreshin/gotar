@@ -11,7 +11,7 @@ type stringsState struct {
 	currentStringTypes []VibratingString
 	ringingStrings     []VibratingString
 	decay              float32
-	overlap            bool
+	polyphonic         bool
 	currentStringIndex int
 }
 
@@ -53,7 +53,7 @@ var (
 		},
 		currentStringTypes: []VibratingString{&GuitarString{}},
 		currentStringIndex: 0,
-		overlap:            true,
+		polyphonic:         true,
 		decay:              decayFactor,
 	}
 	fState = &fxState{

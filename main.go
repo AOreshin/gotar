@@ -28,8 +28,8 @@ func main() {
 	}
 	defer audio.Destroy()
 
-	printAvailableApis()
-	printAvailableDevices(audio)
+	// printAvailableApis()
+	// printAvailableDevices(audio)
 
 	err = audio.Open(rtAudioParams(audio), nil, rtaudio.FormatFloat32,
 		uint(sampleRate), buffer, callback, rtAudioOptions())
@@ -52,19 +52,27 @@ func main() {
 		SetBorder(true).
 		SetTitle("Octave shift")
 
+	polyphonic := tview.NewTextView()
+	polyphonic.SetText("true").
+		SetTextAlign(tview.AlignCenter).
+		SetBorder(true).
+		SetTitle("Polyphonic")
+
 	header := tview.NewTextView()
 	header.SetBorder(true).
 		SetTitle("gotar").
 		SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			handleKeys(event, note)
 			handleOctaves(event, octave)
+			handlePolyphonic(event, polyphonic)
 			return nil
 		})
 
 	flex := tview.NewFlex().
 		AddItem(header, 0, 1, true).
 		AddItem(note, 0, 1, false).
-		AddItem(octave, 0, 1, false)
+		AddItem(octave, 0, 1, false).
+		AddItem(polyphonic, 0, 1, false)
 
 	err = tview.NewApplication().SetRoot(flex, true).Run()
 	if err != nil {

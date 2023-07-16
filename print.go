@@ -30,7 +30,7 @@ func printState(r rune, n *note) {
 	fmt.Print("\033[u\033[0J")
 	fmt.Printf("note \033[1;32m%s%d\033[0m frequency \033[1;32m%.3f\033[0m\r\n",
 		n.name, n.octave, n.frequency)
-	fmt.Printf("overlap \033[1;32m%v\033[0m\r\n", sState.overlap)
+	fmt.Printf("overlap \033[1;32m%v\033[0m\r\n", sState.polyphonic)
 	fmt.Printf("decay factor \033[1;32m%.3f\033[0m\r\n", sState.decay)
 	fmt.Printf("\033[1;32m%d\033[0m ringing strings\r\n", len(sState.ringingStrings))
 	fmt.Printf("types \033[1;32m%v\033[0m\r\n", sState.currentStringTypes)
